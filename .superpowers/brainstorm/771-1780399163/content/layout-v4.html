@@ -1,0 +1,92 @@
+<h2>修订：拍照整合到仪表盘底部</h2>
+<p class="subtitle">拍照按钮常驻主页面底部中央，一键启动相机，无需切换 Tab</p>
+
+<div class="split">
+  <div class="mockup" onclick="toggleSelect(this)" data-choice="gauge-v4" style="cursor:pointer">
+    <div class="mockup-header">方案 D：拍照整合到仪表盘</div>
+    <div class="mockup-body" style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);padding:0;font-family:system-ui,-apple-system,sans-serif;color:#fff;min-height:560px;border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+      <!-- Status Bar -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:11px;opacity:0.6">9:41 <span>🔋</span></div>
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 4px">
+        <div>
+          <div style="font-size:26px;font-weight:700;letter-spacing:-0.5px">今日</div>
+          <div style="font-size:13px;opacity:0.35;font-weight:500">6月2日 周一</div>
+        </div>
+        <span style="font-size:11px;background:#FF6B35;color:#fff;padding:5px 12px;border-radius:20px;font-weight:600">🎯 减脂中</span>
+      </div>
+      <!-- Gauge - slightly smaller to make room -->
+      <div style="display:flex;justify-content:center;padding:0;position:relative">
+        <svg viewBox="0 0 280 155" width="240" style="display:block">
+          <path d="M 35 135 A 105 105 0 0 1 245 135" fill="none" stroke="#2a2a3a" stroke-width="20" stroke-linecap="round"/>
+          <path d="M 35 135 A 105 105 0 0 1 245 135" fill="none" stroke="url(#gv4)" stroke-width="20" stroke-linecap="round" stroke-dasharray="330 530"/>
+          <defs>
+            <linearGradient id="gv4" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#FF6B35"/>
+              <stop offset="50%" style="stop-color:#FF8C42"/>
+              <stop offset="100%" style="stop-color:#FFB347"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(140,135)" text-anchor="middle" font-size="7" fill="#555" font-family="system-ui,sans-serif">
+            <line x1="-105" y1="-8" x2="-105" y2="-20" stroke="#444" stroke-width="0.8"/>
+            <line x1="-52.5" y1="-83" x2="-49" y2="-94" stroke="#444" stroke-width="0.8"/>
+            <line x1="0" y1="-105" x2="0" y2="-116" stroke="#444" stroke-width="0.8"/>
+            <line x1="52.5" y1="-83" x2="49" y2="-94" stroke="#444" stroke-width="0.8"/>
+            <line x1="105" y1="-8" x2="105" y2="-20" stroke="#444" stroke-width="0.8"/>
+          </g>
+        </svg>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);text-align:center;pointer-events:none">
+          <div style="font-size:42px;font-weight:700;color:#FF6B35;line-height:1;letter-spacing:-1.5px">1,280</div>
+          <div style="font-size:11px;opacity:0.35;margin-top:2px;font-weight:500">/ 2,000 千卡</div>
+        </div>
+      </div>
+      <!-- Macronutrient -->
+      <div style="display:flex;gap:6px;padding:0 20px 2px;justify-content:center">
+        <span style="background:rgba(255,107,53,0.2);color:#FF8C42;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">碳水 45%</span>
+        <span style="background:rgba(255,179,71,0.15);color:#FFB347;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">蛋白质 30%</span>
+        <span style="background:rgba(255,217,61,0.15);color:#FFD93D;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">脂肪 25%</span>
+      </div>
+
+      <!-- ★ Camera Button - bottom center ★ -->
+      <div style="display:flex;justify-content:center;padding:6px 0 2px">
+        <div style="background:linear-gradient(135deg, #FF6B35, #FF8C42);width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(255,107,53,0.3)">
+          <span style="font-size:24px">📷</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:12px;font-weight:600;color:#FF6B35;margin-bottom:6px">拍照记录</div>
+
+      <!-- Meal cards (scrollable area) -->
+      <div style="flex:1;overflow:hidden;padding:0 16px">
+        <div style="font-size:13px;font-weight:600;opacity:0.4;padding:4px 4px 6px">今日饮食</div>
+        <div style="background:#1e1e30;margin-bottom:5px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:16px">🍚</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">午餐</div><div style="font-size:11px;opacity:0.35;font-weight:500">米饭 · 番茄炒蛋 · 西兰花</div></div>
+          <div style="font-size:15px;font-weight:700;color:#FF8C42">520<span style="font-size:10px;opacity:0.4;margin-left:2px">kcal</span></div>
+        </div>
+        <div style="background:#1e1e30;margin-bottom:5px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:16px">🥗</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">晚餐</div><div style="font-size:11px;opacity:0.35;font-weight:500">沙拉 · 鸡胸肉</div></div>
+          <div style="font-size:15px;font-weight:700;color:#FF8C42">380<span style="font-size:10px;opacity:0.4;margin-left:2px">kcal</span></div>
+        </div>
+      </div>
+      <!-- 3-Tab Nav -->
+      <div style="display:flex;justify-content:space-around;padding:10px 0 8px;border-top:1px solid #1e1e30">
+        <div style="text-align:center;color:#FF6B35;font-size:10px;font-weight:600">📊<br>仪表盘</div>
+        <div style="text-align:center;opacity:0.25;font-size:10px;font-weight:500">📋<br>记录</div>
+        <div style="text-align:center;opacity:0.25;font-size:10px;font-weight:500">👤<br>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">页面结构说明</div>
+    <div style="padding:24px;color:#fff;font-size:13px;line-height:2;opacity:0.7">
+      <b style="color:#FF6B35">3 个 Tab：</b><br>
+      📊 <b>仪表盘</b> — 热量表盘 + 拍照按钮 + 今日饮食<br>
+      📋 <b>记录</b> — 历史饮食时间线，按天折叠<br>
+      👤 <b>我的</b> — 档案 / API Key / 主题切换<br>
+      <br>
+      <b style="color:#FF8C42">拍照按钮</b> 固定在仪表盘底部中央，橙色大圆按钮，点一下直接开相机。拍完识别后自动跳回仪表盘，识别结果插入今日饮食列表。
+    </div>
+  </div>
+</div>

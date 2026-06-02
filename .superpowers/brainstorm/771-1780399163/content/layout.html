@@ -1,0 +1,109 @@
+<h2>选择导航布局</h2>
+<p class="subtitle">底部 4 个 Tab：仪表盘、记录、拍照、我的。两种布局风格，你更喜欢哪个？</p>
+
+<div class="split">
+  <div class="mockup" onclick="toggleSelect(this)" data-choice="layout-a" style="cursor:pointer">
+    <div class="mockup-header">方案 A：卡片流 + 大数字</div>
+    <div class="mockup-body" style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);padding:0;font-family:sans-serif;color:#fff;min-height:440px;border-radius:12px;overflow:hidden">
+      <!-- Status Bar -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:11px;opacity:0.7">9:41 <span>🔋</span></div>
+      <!-- Header -->
+      <div style="padding:0 16px 8px"><span style="font-size:22px;font-weight:700">今日</span><span style="font-size:14px;opacity:0.5;margin-left:6px">6月2日 周一</span></div>
+      <!-- Big Calorie Ring -->
+      <div style="display:flex;justify-content:center;align-items:center;padding:8px 0">
+        <div style="width:140px;height:140px;border-radius:50%;background:conic-gradient(#FF6B35 0% 65%, #FFB347 65% 100%, #333 100% 100%);display:flex;align-items:center;justify-content:center">
+          <div style="width:110px;height:110px;border-radius:50%;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span style="font-size:32px;font-weight:800;color:#FF6B35">1,280</span>
+            <span style="font-size:11px;opacity:0.5">/ 2,000 千卡</span>
+          </div>
+        </div>
+      </div>
+      <!-- Macronutrient pills -->
+      <div style="display:flex;gap:8px;padding:8px 16px;justify-content:center">
+        <span style="background:#FF6B35;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">碳水 45%</span>
+        <span style="background:#FFB347;color:#1a1a2e;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">蛋白质 30%</span>
+        <span style="background:#FFD93D;color:#1a1a2e;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">脂肪 25%</span>
+      </div>
+      <!-- Meal cards -->
+      <div style="background:#222;margin:12px 16px 8px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🍚</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">午餐</div><div style="font-size:11px;opacity:0.5">米饭 · 番茄炒蛋 · 西兰花</div></div>
+        <span style="font-size:15px;font-weight:700;color:#FF6B35">520 kcal</span>
+      </div>
+      <div style="background:#222;margin:4px 16px 8px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🥗</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">晚餐</div><div style="font-size:11px;opacity:0.5">沙拉 · 鸡胸肉</div></div>
+        <span style="font-size:15px;font-weight:700;color:#FF6B35">380 kcal</span>
+      </div>
+      <!-- Bottom Nav -->
+      <div style="display:flex;justify-content:space-around;padding:10px 0 6px;border-top:1px solid #333;margin-top:auto">
+        <div style="text-align:center;color:#FF6B35;font-size:10px">📊<br>仪表盘</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📋<br>记录</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📷<br>拍照</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">👤<br>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup" onclick="toggleSelect(this)" data-choice="layout-b" style="cursor:pointer">
+    <div class="mockup-header">方案 B：仪表盘网格 + 趋势图</div>
+    <div class="mockup-body" style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);padding:0;font-family:sans-serif;color:#fff;min-height:440px;border-radius:12px;overflow:hidden">
+      <!-- Status Bar -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:11px;opacity:0.7">9:41 <span>🔋</span></div>
+      <!-- Header -->
+      <div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:center">
+        <div><span style="font-size:22px;font-weight:700">仪表盘</span></div>
+        <span style="font-size:12px;background:#FF6B35;color:#fff;padding:4px 10px;border-radius:14px">减脂中</span>
+      </div>
+      <!-- Stats Grid 2x2 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px">
+        <div style="background:linear-gradient(135deg, #FF6B35, #FF8C42);border-radius:14px;padding:14px">
+          <div style="font-size:11px;opacity:0.85">今日摄入</div>
+          <div style="font-size:26px;font-weight:800;margin:4px 0">1,280</div>
+          <div style="font-size:10px;opacity:0.75">/ 2,000 千卡</div>
+        </div>
+        <div style="background:#222;border-radius:14px;padding:14px">
+          <div style="font-size:11px;opacity:0.5">剩余可吃</div>
+          <div style="font-size:26px;font-weight:800;margin:4px 0;color:#FFD93D">720</div>
+          <div style="font-size:10px;opacity:0.4">千卡</div>
+        </div>
+        <div style="background:#222;border-radius:14px;padding:14px">
+          <div style="font-size:11px;opacity:0.5">当前体重</div>
+          <div style="font-size:26px;font-weight:800;margin:4px 0">72.5</div>
+          <div style="font-size:10px;color:#4CAF50">↓ 0.3 kg</div>
+        </div>
+        <div style="background:#222;border-radius:14px;padding:14px">
+          <div style="font-size:11px;opacity:0.5">目标体重</div>
+          <div style="font-size:26px;font-weight:800;margin:4px 0">68</div>
+          <div style="font-size:10px;opacity:0.4">kg</div>
+        </div>
+      </div>
+      <!-- Mini chart bar -->
+      <div style="background:#222;margin:8px 16px;border-radius:14px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600">近7天热量</span>
+          <span style="font-size:10px;opacity:0.4">日均 1,650 kcal</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:60px">
+          <div style="flex:1;background:#FF6B35;height:70%;border-radius:4px 4px 0 0"></div>
+          <div style="flex:1;background:#FF6B35;height:85%;border-radius:4px 4px 0 0"></div>
+          <div style="flex:1;background:#FF6B35;height:55%;border-radius:4px 4px 0 0"></div>
+          <div style="flex:1;background:#FFB347;height:65%;border-radius:4px 4px 0 0;opacity:0.6"></div>
+          <div style="flex:1;background:#FFB347;height:65%;border-radius:4px 4px 0 0;opacity:0.6"></div>
+          <div style="flex:1;background:#FFB347;height:65%;border-radius:4px 4px 0 0;opacity:0.6"></div>
+          <div style="flex:1;background:#FFB347;height:65%;border-radius:4px 4px 0 0;opacity:0.6"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;opacity:0.35;margin-top:6px">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+      </div>
+      <!-- Bottom Nav -->
+      <div style="display:flex;justify-content:space-around;padding:10px 0 6px;border-top:1px solid #333;margin-top:auto">
+        <div style="text-align:center;color:#FF6B35;font-size:10px">📊<br>仪表盘</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📋<br>记录</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📷<br>拍照</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">👤<br>我的</div>
+      </div>
+    </div>
+  </div>
+</div>

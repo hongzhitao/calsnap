@@ -1,0 +1,113 @@
+<h2>修订版：表盘式圆弧仪表</h2>
+<p class="subtitle">表盘刻度 + 多种字体方案对比，更像一块精致的仪表</p>
+
+<div class="split">
+  <div class="mockup" onclick="toggleSelect(this)" data-choice="gauge-v3" style="cursor:pointer">
+    <div class="mockup-header">表盘仪表（点击选择）</div>
+    <div class="mockup-body" style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);padding:0;font-family:system-ui,-apple-system,sans-serif;color:#fff;min-height:520px;border-radius:12px;overflow:hidden">
+      <!-- Status Bar -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:11px;opacity:0.6">9:41 <span>🔋</span></div>
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 8px">
+        <div>
+          <div style="font-size:26px;font-weight:300;letter-spacing:-0.5px">今日</div>
+          <div style="font-size:13px;opacity:0.35;font-weight:300">6月2日 周一</div>
+        </div>
+        <span style="font-size:11px;background:#FF6B35;color:#fff;padding:5px 12px;border-radius:20px;font-weight:500;letter-spacing:0.5px">🎯 减脂中</span>
+      </div>
+      <!-- Gauge -->
+      <div style="display:flex;justify-content:center;padding:0;position:relative">
+        <svg viewBox="0 0 280 170" width="280" style="display:block">
+          <!-- Tick marks -->
+          <g transform="translate(140,145)" text-anchor="middle" font-size="7" fill="#666" font-family="system-ui,sans-serif">
+            <!-- Left ticks -->
+            <line x1="-105" y1="-10" x2="-105" y2="-24" stroke="#444" stroke-width="1"/>
+            <line x1="-78.5" y1="-65" x2="-73.5" y2="-78" stroke="#444" stroke-width="1"/>
+            <line x1="-35" y1="-97" x2="-32" y2="-109" stroke="#444" stroke-width="1"/>
+            <line x1="35" y1="-97" x2="32" y2="-109" stroke="#444" stroke-width="1"/>
+            <line x1="78.5" y1="-65" x2="73.5" y2="-78" stroke="#444" stroke-width="1"/>
+            <line x1="105" y1="-10" x2="105" y2="-24" stroke="#444" stroke-width="1"/>
+            <!-- Labels -->
+            <text x="-107" y="6" font-size="8">0</text>
+            <text x="-55" y="-90" font-size="8">1000</text>
+            <text x="0" y="-116" font-size="8">1500</text>
+            <text x="55" y="-90" font-size="8">2000</text>
+            <text x="107" y="6" font-size="8">2500</text>
+          </g>
+          <!-- Outer arc ring (background track) -->
+          <path d="M 35 145 A 105 105 0 0 1 245 145" fill="none" stroke="#2a2a3a" stroke-width="22" stroke-linecap="round"/>
+          <!-- Progress arc 65% -->
+          <path d="M 35 145 A 105 105 0 0 1 245 145" fill="none" stroke="url(#gaugeGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="330 530"/>
+          <!-- Inner shadow arc -->
+          <path d="M 35 145 A 105 105 0 0 1 245 145" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="6" stroke-linecap="round" stroke-dasharray="330 530"/>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#FF6B35"/>
+              <stop offset="40%" style="stop-color:#FF8C42"/>
+              <stop offset="100%" style="stop-color:#FFB347"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <!-- Center text overlay -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-42%);text-align:center;pointer-events:none">
+          <div style="font-size:48px;font-weight:200;color:#FF6B35;line-height:1;letter-spacing:-2px;font-family:system-ui,-apple-system,sans-serif">1,280</div>
+          <div style="font-size:11px;opacity:0.35;margin-top:4px;font-weight:300;letter-spacing:1px">千卡</div>
+          <div style="font-size:12px;color:#FFB347;margin-top:4px;font-weight:400">还可 720</div>
+        </div>
+      </div>
+      <!-- Macronutrient -->
+      <div style="display:flex;gap:6px;padding:0 20px 8px;justify-content:center">
+        <span style="background:rgba(255,107,53,0.2);color:#FF8C42;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:400">碳水 45%</span>
+        <span style="background:rgba(255,179,71,0.15);color:#FFB347;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:400">蛋白质 30%</span>
+        <span style="background:rgba(255,217,61,0.15);color:#FFD93D;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:400">脂肪 25%</span>
+      </div>
+      <!-- Meal cards -->
+      <div style="background:#1e1e30;margin:4px 16px 6px;border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:18px">🍚</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">午餐</div><div style="font-size:11px;opacity:0.35;font-weight:300">米饭 · 番茄炒蛋 · 西兰花</div></div>
+        <div style="font-size:16px;font-weight:300;color:#FF8C42;letter-spacing:-0.5px">520<span style="font-size:10px;opacity:0.4;margin-left:2px">kcal</span></div>
+      </div>
+      <div style="background:#1e1e30;margin:4px 16px 6px;border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:18px">🥗</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">晚餐</div><div style="font-size:11px;opacity:0.35;font-weight:300">沙拉 · 鸡胸肉</div></div>
+        <div style="font-size:16px;font-weight:300;color:#FF8C42;letter-spacing:-0.5px">380<span style="font-size:10px;opacity:0.4;margin-left:2px">kcal</span></div>
+      </div>
+      <!-- Bottom Nav -->
+      <div style="display:flex;justify-content:space-around;padding:12px 0 8px;border-top:1px solid #1e1e30">
+        <div style="text-align:center;color:#FF6B35;font-size:10px;font-weight:500">📊<br>仪表盘</div>
+        <div style="text-align:center;opacity:0.25;font-size:10px;font-weight:300">📋<br>记录</div>
+        <div style="text-align:center;opacity:0.25;font-size:10px;font-weight:300">📷<br>拍照</div>
+        <div style="text-align:center;opacity:0.25;font-size:10px;font-weight:300">👤<br>我的</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px">
+  <h3>字体风格偏好</h3>
+  <p class="subtitle">数字是仪表盘的核心，选择一个你喜欢的字体风格</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="font-light" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3 style="font-weight:200;font-size:28px;letter-spacing:-0.5px">轻量极简 1,280</h3>
+      <p>细体、大留白、现代感，系统默认无衬线字体，适合数据驱动的界面</p>
+    </div>
+  </div>
+  <div class="option" data-choice="font-mono" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3 style="font-family:monospace;font-size:24px;letter-spacing:-1px">等宽数字 1,280</h3>
+      <p>等宽字体，数字对齐精准，有仪器/仪表感，像专业测量设备</p>
+    </div>
+  </div>
+  <div class="option" data-choice="font-rounded" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3 style="font-family:system-ui;font-weight:700;font-size:26px;letter-spacing:-1px">圆润粗体 <span style="color:#FF6B35">1,280</span></h3>
+      <p>粗体圆角数字，温暖友好，有消费类 App 的亲和力</p>
+    </div>
+  </div>
+</div>

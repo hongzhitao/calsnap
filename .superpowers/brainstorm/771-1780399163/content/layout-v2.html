@@ -1,0 +1,84 @@
+<h2>修订版：大圆弧 + 卡片流</h2>
+<p class="subtitle">基于方案 A，圆环改成更醒目的圆弧进度条，占比更大</p>
+
+<div class="split">
+  <div class="mockup" onclick="toggleSelect(this)" data-choice="layout-a2" style="cursor:pointer">
+    <div class="mockup-header">方案 A-2：大圆弧仪表盘</div>
+    <div class="mockup-body" style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);padding:0;font-family:sans-serif;color:#fff;min-height:480px;border-radius:12px;overflow:hidden">
+      <!-- Status Bar -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:11px;opacity:0.7">9:41 <span>🔋</span></div>
+      <!-- Header -->
+      <div style="padding:0 16px 4px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <span style="font-size:22px;font-weight:700">今日</span>
+          <span style="font-size:14px;opacity:0.5;margin-left:6px">6月2日</span>
+        </div>
+        <span style="font-size:12px;background:#FF6B35;color:#fff;padding:4px 10px;border-radius:14px">减脂中</span>
+      </div>
+      <!-- Big Arc Gauge -->
+      <div style="display:flex;justify-content:center;padding:12px 0 4px;position:relative">
+        <svg viewBox="0 0 200 120" width="220" style="display:block">
+          <!-- Background arc -->
+          <path d="M 30 110 A 85 85 0 0 1 170 110" fill="none" stroke="#333" stroke-width="16" stroke-linecap="round"/>
+          <!-- Progress arc ~65% -->
+          <path d="M 30 110 A 85 85 0 0 1 170 110" fill="none" stroke="url(#grad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="260 400" stroke-dashoffset="0"/>
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#FF6B35"/>
+              <stop offset="100%" style="stop-color:#FFB347"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-40%);text-align:center">
+          <div style="font-size:42px;font-weight:800;color:#FF6B35;line-height:1">1,280</div>
+          <div style="font-size:12px;opacity:0.45;margin-top:2px">/ 2,000 千卡</div>
+          <div style="font-size:11px;color:#FFD93D;margin-top:2px">还可摄入 720</div>
+        </div>
+      </div>
+      <!-- Macronutrient pills -->
+      <div style="display:flex;gap:8px;padding:0 16px 10px;justify-content:center">
+        <span style="background:#FF6B35;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">碳水 45%</span>
+        <span style="background:#FFB347;color:#1a1a2e;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">蛋白质 30%</span>
+        <span style="background:#FFD93D;color:#1a1a2e;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600">脂肪 25%</span>
+      </div>
+      <!-- Meal cards -->
+      <div style="background:#222;margin:4px 16px 6px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🍚</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">午餐</div><div style="font-size:11px;opacity:0.5">米饭 · 番茄炒蛋 · 西兰花</div></div>
+        <span style="font-size:15px;font-weight:700;color:#FF6B35">520 kcal</span>
+      </div>
+      <div style="background:#222;margin:4px 16px 6px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🥗</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">晚餐</div><div style="font-size:11px;opacity:0.5">沙拉 · 鸡胸肉</div></div>
+        <span style="font-size:15px;font-weight:700;color:#FF6B35">380 kcal</span>
+      </div>
+      <!-- Bottom Nav -->
+      <div style="display:flex;justify-content:space-around;padding:10px 0 6px;border-top:1px solid #333">
+        <div style="text-align:center;color:#FF6B35;font-size:10px">📊<br>仪表盘</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📋<br>记录</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">📷<br>拍照</div>
+        <div style="text-align:center;opacity:0.4;font-size:10px">👤<br>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup" style="display:flex;flex-direction:column;gap:16px;padding:24px;justify-content:center;align-items:center;background:#222;border-radius:16px;min-height:480px">
+    <div style="color:#fff;font-size:16px;font-weight:600;text-align:center">圆弧进度细节</div>
+    <svg viewBox="0 0 240 140" width="240">
+      <path d="M 30 120 A 100 100 0 0 1 210 120" fill="none" stroke="#333" stroke-width="18" stroke-linecap="round"/>
+      <path d="M 30 120 A 100 100 0 0 1 210 120" fill="none" stroke="url(#g2)" stroke-width="18" stroke-linecap="round" stroke-dasharray="320 600"/>
+      <defs>
+        <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#FF6B35"/>
+          <stop offset="50%" style="stop-color:#FF8C42"/>
+          <stop offset="100%" style="stop-color:#FFB347"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div style="color:#fff;font-size:13px;opacity:0.5;text-align:center;line-height:1.6">
+      圆弧占比 ≈ 已摄入/目标<br>
+      渐变色从橙红到暖金黄<br>
+      数值居中显示，一目了然
+    </div>
+  </div>
+</div>
