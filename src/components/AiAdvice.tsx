@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import type { AppSettings } from '../types';
 import { getDietaryAdvice } from '../ai';
 import { getProfile, getMealsByDateRange, getWeightHistory, getSettings } from '../db';
@@ -34,15 +36,8 @@ export default function AiAdvice() {
 
       const result = await getDietaryAdvice(
         {
-          profile: {
-            height: profile.height, weight: profile.weight, age: profile.age,
-            gender: profile.gender, goal: profile.goal, dailyTarget: profile.dailyTarget,
-          },
-          meals: meals.map((m) => ({
-            date: m.date, mealType: m.mealType,
-            foods: m.foods.map((f) => ({ name: f.name, calories: f.calories })),
-            totalCalories: m.totalCalories,
-          })),
+          profile: { height: profile.height, weight: profile.weight, age: profile.age, gender: profile.gender, goal: profile.goal, dailyTarget: profile.dailyTarget },
+          meals: meals.map((m) => ({ date: m.date, mealType: m.mealType, foods: m.foods.map((f) => ({ name: f.name, calories: f.calories })), totalCalories: m.totalCalories })),
           weightHistory: weights,
         },
         settings
@@ -56,48 +51,59 @@ export default function AiAdvice() {
 
   if (!settings?.apiKey) {
     return (
-      <div className="bg-surface rounded-2xl p-5 mx-4 light:bg-white light:shadow-sm">
-        <h3 className="text-sm font-semibold mb-2">🤖 AI 饮食建议</h3>
-        <p className="text-xs opacity-35">配置 API Key 后获取个性化饮食建议</p>
+      <div className="bg-white rounded-3xl p-5 shadow-soft">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles size={18} className="text-primary" />
+          <h3 className="text-[15px] font-bold text-black">AI 饮食建议</h3>
+        </div>
+        <p className="text-[13px] text-text-muted">配置 API Key 后获取个性化饮食建议</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-surface rounded-2xl p-5 mx-4 light:bg-white light:shadow-sm">
+    <div className="bg-white rounded-3xl p-5 shadow-soft">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold">🤖 AI 饮食建议</h3>
+        <div className="flex items-center gap-2">
+          <Sparkles size={18} className="text-primary" />
+          <h3 className="text-[15px] font-bold text-black">AI 饮食建议</h3>
+        </div>
         {advice && (
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="text-xs text-primary font-semibold opacity-60 hover:opacity-100"
-          >
-            重新生成
+          <button onClick={handleGenerate} disabled={loading}
+            className="flex items-center gap-1 text-[12px] text-primary font-semibold active:opacity-70">
+            <RefreshCw size={13} /> 重新生成
           </button>
         )}
       </div>
 
-      {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+      {error && <p className="text-red-500 text-[12px] mb-3">{error}</p>}
 
       {!advice && !loading && (
-        <button
+        <motion.button
           onClick={handleGenerate}
-          className="w-full py-2.5 rounded-full bg-primary text-white text-sm font-semibold"
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3 rounded-2xl bg-primary text-white text-[14px] font-semibold shadow-glow"
         >
           获取 AI 建议
-        </button>
+        </motion.button>
       )}
 
       {loading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm opacity-40 ml-3">分析中...</span>
+        <div className="flex items-center justify-center py-8 gap-3">
+          <Loader2 size={20} className="text-primary animate-spin" />
+          <span className="text-[14px] text-text-muted">AI 正在分析你的饮食数据...</span>
         </div>
       )}
 
       {advice && !loading && (
-        <div className="text-sm leading-relaxed opacity-80 whitespace-pre-wrap">{advice}</div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="text-[14px] leading-relaxed text-text-secondary whitespace-pre-wrap"
+        >
+          {advice}
+        </motion.div>
       )}
     </div>
   );

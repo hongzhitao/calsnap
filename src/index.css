@@ -2,11 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-bg text-white;
-  overscroll-behavior: none;
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-body.light {
-  @apply bg-bg-light text-gray-900;
+body {
+  @apply bg-bg text-text-secondary;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS safe area padding */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 20px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Scrollbar hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Arc gauge glow */
+.arc-glow {
+  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4));
 }
