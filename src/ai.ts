@@ -25,6 +25,117 @@ Analyze their eating patterns and provide personalized dietary advice in Chinese
 
 Keep it concise, actionable, and encouraging. Max 400 words.`;
 
+const TEXT_SYSTEM_PROMPT = `You are a nutritionist AI. The user will describe what they ate in natural language. Identify all food items, estimate portion size, and estimate calories for each. Return ONLY valid JSON, no other text.
+
+Format:
+{
+  "foods": [
+    { "name": "food name", "portion": "estimated amount", "calories": number }
+  ],
+  "totalCalories": number
+}
+
+Be precise but conservative in estimates. If the user says "一碗米饭", estimate ~200g and ~230 kcal. If they say "一份番茄炒蛋", estimate ~250g and ~180 kcal.`;
+
+export async function recognizeFoodFromText(
+  description: string,
+  settings: AppSettings
+): Promise<AIResult> {
+  return callTextAI(description, settings);
+}
+
+async function callTextAI(
+  description: string,
+  settings: AppSettings
+): Promise<AIResult> {
+  const userPrompt = `Describe what you ate: ${description}`;
+
+  if (settings.aiService === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: TEXT_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`OpenAI API error ${res.status}`);
+    const data = await res.json();
+    return parseAIResponse(data.choices[0].message.content);
+  }
+
+  if (settings.aiService === 'qwen') {
+    const res = await fetch(
+      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen-plus',
+          max_tokens: 1024,
+          messages: [
+            { role: 'system', content: TEXT_SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Qwen API error ${res.status}`);
+    const data = await res.json();
+    return parseAIResponse(data.choices[0].message.content);
+  }
+
+  if (settings.aiService === 'deepseek') {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: TEXT_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`DeepSeek API error ${res.status}`);
+    const data = await res.json();
+    return parseAIResponse(data.choices[0].message.content);
+  }
+
+  // Claude
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': settings.apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: TEXT_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`Claude API error ${res.status}`);
+  const data = await res.json();
+  return parseAIResponse(data.content[0].text);
+}
+
 export async function recognizeFood(
   imageBase64: string,
   settings: AppSettings

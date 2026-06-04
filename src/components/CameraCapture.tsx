@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { AppSettings, MealRecord, MealType, AIResult } from '../types';
 import { compressImage, todayStr, uid } from '../utils';
-import { recognizeFood } from '../ai';
+import { recognizeFood, recognizeFoodFromText } from '../ai';
 import { saveMeal, getSettings } from '../db';
 
 interface CameraCaptureProps {
@@ -9,12 +9,13 @@ interface CameraCaptureProps {
 }
 
 export default function CameraCapture({ onComplete }: CameraCaptureProps) {
-  const [step, setStep] = useState<'camera' | 'preview' | 'loading' | 'confirm'>('camera');
+  const [step, setStep] = useState<'camera' | 'text' | 'preview' | 'loading' | 'confirm'>('camera');
   const [photo, setPhoto] = useState<string | null>(null);
   const [result, setResult] = useState<AIResult | null>(null);
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [error, setError] = useState('');
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
+  const [textInput, setTextInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,15 +63,29 @@ export default function CameraCapture({ onComplete }: CameraCaptureProps) {
     }
   }
 
+  async function handleTextAnalyze() {
+    if (!textInput.trim() || !settings) return;
+    setStep('loading');
+    setError('');
+    try {
+      const aiResult = await recognizeFoodFromText(textInput, settings);
+      setResult(aiResult);
+      setStep('confirm');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '识别失败，请重试');
+      setStep('text');
+    }
+  }
+
   async function handleSave() {
-    if (!result || !photo || !settings) return;
+    if (!result || !settings) return;
     const meal: MealRecord = {
       id: uid(),
       date: todayStr(),
       mealType,
       foods: result.foods,
       totalCalories: result.totalCalories,
-      photoUrl: photo,
+      photoUrl: photo || '',
       createdAt: Date.now(),
     };
     await saveMeal(meal);
@@ -85,7 +100,8 @@ export default function CameraCapture({ onComplete }: CameraCaptureProps) {
           取消
         </button>
         <span className="font-semibold text-sm">
-          {step === 'camera' && '拍摄食物'}
+          {step === 'camera' && '记录饮食'}
+          {step === 'text' && '文字描述'}
           {step === 'preview' && '确认照片'}
           {step === 'loading' && '识别中...'}
           {step === 'confirm' && '确认结果'}
@@ -105,14 +121,54 @@ export default function CameraCapture({ onComplete }: CameraCaptureProps) {
               onChange={handleFileSelect}
               className="hidden"
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-20 h-20 rounded-full bg-gradient-to-b from-primary to-primary-light flex items-center justify-center shadow-lg shadow-primary/30"
-            >
-              <span className="text-3xl">📷</span>
-            </button>
-            <p className="text-xs opacity-30 mt-4">点击拍照或从相册选择</p>
+            <div className="flex flex-col items-center gap-6">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-20 h-20 rounded-full bg-gradient-to-b from-primary to-primary-light flex items-center justify-center shadow-lg shadow-primary/30"
+              >
+                <span className="text-3xl">📷</span>
+              </button>
+              <div className="flex items-center gap-4 w-full max-w-xs">
+                <div className="flex-1 h-px bg-surface" />
+                <span className="text-xs opacity-25">或</span>
+                <div className="flex-1 h-px bg-surface" />
+              </div>
+              <button
+                onClick={() => { setStep('text'); setError(''); }}
+                className="w-full max-w-xs py-3 rounded-full border border-surface text-sm font-semibold opacity-60 hover:opacity-100 flex items-center justify-center gap-2"
+              >
+                <span>✏️</span> 文字描述吃了什么
+              </button>
+            </div>
           </>
+        )}
+
+        {step === 'text' && (
+          <div className="w-full max-w-sm">
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="描述一下你吃了什么...&#10;例如：一碗米饭、一份番茄炒蛋、一块鸡胸肉约200g"
+              className="w-full bg-surface rounded-2xl p-4 text-sm min-h-[120px] resize-none light:bg-white light:border light:border-gray-200"
+              autoFocus
+            />
+            {error && <p className="text-red-400 text-sm mt-3 text-center">{error}</p>}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setStep('camera'); setTextInput(''); setError(''); }}
+                className="flex-1 py-2.5 rounded-full border border-surface text-sm font-semibold opacity-50"
+              >
+                返回
+              </button>
+              <button
+                onClick={handleTextAnalyze}
+                disabled={!textInput.trim()}
+                className="flex-1 py-2.5 rounded-full bg-primary text-white text-sm font-semibold disabled:opacity-40"
+              >
+                开始识别
+              </button>
+            </div>
+          </div>
         )}
 
         {(step === 'preview' || step === 'loading') && photo && (
@@ -134,6 +190,13 @@ export default function CameraCapture({ onComplete }: CameraCaptureProps) {
                 {step === 'loading' ? '分析中...' : '开始识别'}
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 'loading' && !photo && (
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm opacity-40">AI 正在分析...</span>
           </div>
         )}
 
@@ -169,10 +232,10 @@ export default function CameraCapture({ onComplete }: CameraCaptureProps) {
             </div>
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => { setResult(null); setStep('camera'); }}
+                onClick={() => { setResult(null); setPhoto(null); setTextInput(''); setStep('camera'); }}
                 className="flex-1 py-2.5 rounded-full border border-surface text-sm font-semibold opacity-50 light:border-gray-200"
               >
-                重新拍摄
+                重新记录
               </button>
               <button
                 onClick={handleSave}
