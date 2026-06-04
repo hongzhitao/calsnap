@@ -148,12 +148,13 @@ export default function ProfileForm() {
           <label className="text-[10px] opacity-40 font-medium uppercase">AI 服务</label>
           <select
             value={settings.aiService}
-            onChange={(e) => setSettings({ ...settings, aiService: e.target.value as 'claude' | 'openai' | 'qwen' })}
+            onChange={(e) => setSettings({ ...settings, aiService: e.target.value as 'claude' | 'openai' | 'qwen' | 'deepseek' })}
             className="w-full bg-bg rounded-lg px-3 py-2 text-sm mt-0.5 light:bg-gray-100"
           >
             <option value="claude">Claude (Anthropic)</option>
             <option value="openai">OpenAI (GPT-4o)</option>
             <option value="qwen">Qwen (通义千问)</option>
+            <option value="deepseek">DeepSeek（仅文字）</option>
           </select>
         </div>
         <div>

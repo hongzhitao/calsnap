@@ -35,6 +35,9 @@ export async function recognizeFood(
   if (settings.aiService === 'qwen') {
     return callQwen(imageBase64, settings.apiKey, SYSTEM_PROMPT);
   }
+  if (settings.aiService === 'deepseek') {
+    throw new Error('DeepSeek 不支持图片识别，请在设置中切换为 Claude、OpenAI 或 Qwen 后再拍照');
+  }
   return callClaude(imageBase64, settings.apiKey, SYSTEM_PROMPT);
 }
 
@@ -222,6 +225,27 @@ export async function getDietaryAdvice(input: AdviceInput, settings: AppSettings
       }
     );
     if (!res.ok) throw new Error(`Qwen API error ${res.status}`);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+
+  if (settings.aiService === 'deepseek') {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        max_tokens: 1500,
+        messages: [
+          { role: 'system', content: ADVICE_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`DeepSeek API error ${res.status}`);
     const data = await res.json();
     return data.choices[0].message.content;
   }
