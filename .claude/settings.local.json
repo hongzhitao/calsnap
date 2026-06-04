@@ -14,7 +14,9 @@
       "Bash(npx tsc *)",
       "Bash(npx vitest *)",
       "Bash(dir src\\\\components)",
-      "Bash(dir src\\\\*.ts src\\\\*.tsx)"
+      "Bash(dir src\\\\*.ts src\\\\*.tsx)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)"
     ]
   }
 }

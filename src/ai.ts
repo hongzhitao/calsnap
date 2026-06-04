@@ -32,6 +32,9 @@ export async function recognizeFood(
   if (settings.aiService === 'openai') {
     return callOpenAI(imageBase64, settings.apiKey, SYSTEM_PROMPT);
   }
+  if (settings.aiService === 'qwen') {
+    return callQwen(imageBase64, settings.apiKey, SYSTEM_PROMPT);
+  }
   return callClaude(imageBase64, settings.apiKey, SYSTEM_PROMPT);
 }
 
@@ -115,6 +118,50 @@ async function callOpenAI(
   return parseAIResponse(text);
 }
 
+// Qwen (DashScope) uses OpenAI-compatible API format
+async function callQwen(
+  imageBase64: string,
+  apiKey: string,
+  systemPrompt: string
+): Promise<AIResult> {
+  const res = await fetch(
+    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'qwen-plus',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: imageBase64 } },
+              {
+                type: 'text',
+                text: 'Analyze this meal photo and return the food items with calorie estimates.',
+              },
+            ],
+          },
+        ],
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Qwen API error ${res.status}: ${err}`);
+  }
+
+  const data = await res.json();
+  const text = data.choices[0].message.content;
+  return parseAIResponse(text);
+}
+
 function parseAIResponse(text: string): AIResult {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
@@ -151,6 +198,30 @@ export async function getDietaryAdvice(input: AdviceInput, settings: AppSettings
       }),
     });
     if (!res.ok) throw new Error(`OpenAI API error ${res.status}`);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+
+  if (settings.aiService === 'qwen') {
+    const res = await fetch(
+      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen-plus',
+          max_tokens: 1500,
+          messages: [
+            { role: 'system', content: ADVICE_SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Qwen API error ${res.status}`);
     const data = await res.json();
     return data.choices[0].message.content;
   }

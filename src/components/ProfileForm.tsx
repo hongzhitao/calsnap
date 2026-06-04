@@ -66,7 +66,7 @@ export default function ProfileForm() {
         <h3 className="text-sm font-semibold mb-3 opacity-50">个人档案</h3>
         <div className="grid grid-cols-2 gap-3">
           <Field label="身高 (cm)" value={profile.height} onChange={(v) => updateProfile('height', Number(v))} />
-          <Field label="体重 (kg)" value={latestWeight} readOnly />
+          <Field label="体重 (kg)" value={profile.weight} onChange={(v) => updateProfile('weight', Number(v))} />
           <Field label="年龄" value={profile.age} onChange={(v) => updateProfile('age', Number(v))} />
           <div>
             <label className="text-[10px] opacity-40 font-medium uppercase">性别</label>
@@ -148,11 +148,12 @@ export default function ProfileForm() {
           <label className="text-[10px] opacity-40 font-medium uppercase">AI 服务</label>
           <select
             value={settings.aiService}
-            onChange={(e) => setSettings({ ...settings, aiService: e.target.value as 'claude' | 'openai' })}
+            onChange={(e) => setSettings({ ...settings, aiService: e.target.value as 'claude' | 'openai' | 'qwen' })}
             className="w-full bg-bg rounded-lg px-3 py-2 text-sm mt-0.5 light:bg-gray-100"
           >
             <option value="claude">Claude (Anthropic)</option>
             <option value="openai">OpenAI (GPT-4o)</option>
+            <option value="qwen">Qwen (通义千问)</option>
           </select>
         </div>
         <div>
@@ -180,7 +181,11 @@ export default function ProfileForm() {
           {(['dark', 'light'] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setSettings({ ...settings, theme: t })}
+              onClick={() => {
+                const updated = { ...settings, theme: t };
+                setSettings(updated);
+                document.body.classList.toggle('light', t === 'light');
+              }}
               className={`flex-1 py-2 rounded-full text-sm font-semibold ${
                 settings.theme === t
                   ? 'bg-primary text-white'
