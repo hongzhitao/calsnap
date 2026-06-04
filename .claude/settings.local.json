@@ -12,7 +12,9 @@
       "Bash(pkill -f \"vite\")",
       "Bash(timeout 10 npm run dev)",
       "Bash(npx tsc *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(dir src\\\\components)",
+      "Bash(dir src\\\\*.ts src\\\\*.tsx)"
     ]
   }
 }
