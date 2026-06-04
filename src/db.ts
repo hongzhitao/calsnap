@@ -2,25 +2,36 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { UserProfile, WeightEntry, MealRecord, AppSettings } from './types';
 
 const DB_NAME = 'calsnap';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+
+let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function getDB(): Promise<IDBPDatabase> {
-  return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('meals')) {
-        db.createObjectStore('meals', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('profile')) {
-        db.createObjectStore('profile', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('weightHistory')) {
-        db.createObjectStore('weightHistory', { keyPath: 'date' });
-      }
-      if (!db.objectStoreNames.contains('settings')) {
-        db.createObjectStore('settings', { keyPath: 'id' });
-      }
-    },
-  });
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, DB_VERSION, {
+      upgrade(db, oldVersion, _newVersion, transaction) {
+        if (!db.objectStoreNames.contains('meals')) {
+          const mealsStore = db.createObjectStore('meals', { keyPath: 'id' });
+          mealsStore.createIndex('by-date', 'date');
+        } else if (oldVersion < 2) {
+          const mealsStore = transaction!.objectStore('meals');
+          if (!mealsStore.indexNames.contains('by-date')) {
+            mealsStore.createIndex('by-date', 'date');
+          }
+        }
+        if (!db.objectStoreNames.contains('profile')) {
+          db.createObjectStore('profile', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('weightHistory')) {
+          db.createObjectStore('weightHistory', { keyPath: 'date' });
+        }
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'id' });
+        }
+      },
+    });
+  }
+  return dbPromise;
 }
 
 // --- Meals ---
@@ -31,17 +42,18 @@ export async function saveMeal(meal: MealRecord): Promise<void> {
 
 export async function getMealsByDate(date: string): Promise<MealRecord[]> {
   const db = await getDB();
-  const all = await db.getAll('meals');
-  return all.filter((m) => m.date === date).sort((a, b) => b.createdAt - a.createdAt);
+  const all = await db.getAllFromIndex('meals', 'by-date', date);
+  return all.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function getMealsByDateRange(start: string, end: string): Promise<MealRecord[]> {
   const db = await getDB();
-  const all = await db.getAll('meals');
-  return all.filter((m) => m.date >= start && m.date <= end).sort((a, b) => b.createdAt - a.createdAt);
+  const all = await db.getAllFromIndex('meals', 'by-date', IDBKeyRange.bound(start, end));
+  return all.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function deleteMeal(id: string): Promise<void> {
+  if (!id) return;
   const db = await getDB();
   await db.delete('meals', id);
 }
@@ -75,16 +87,16 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   await db.put('settings', { ...settings, id: 'current' });
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
-  aiService: 'claude',
+const DEFAULT_SETTINGS: AppSettings = Object.freeze({
+  aiService: 'claude' as const,
   apiKey: '',
-  theme: 'dark',
-};
+  theme: 'dark' as const,
+});
 
 export async function getSettings(): Promise<AppSettings> {
   const db = await getDB();
   const s = await db.get('settings', 'current');
-  return s ? (s as AppSettings) : DEFAULT_SETTINGS;
+  return s ? { ...DEFAULT_SETTINGS, ...(s as AppSettings) } : { ...DEFAULT_SETTINGS };
 }
 
 // --- Bulk ---
