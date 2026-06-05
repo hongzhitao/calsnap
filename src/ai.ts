@@ -56,9 +56,8 @@ function isDev(): boolean {
 
 function resolveUrl(rawUrl: string): string {
   if (!rawUrl) return rawUrl;
-  // In dev mode, route through Vite proxy to avoid CORS.
-  // Proxy target = https://ark.cn-beijing.volces.com, rewrite strips /api/proxy
-  if (isDev()) {
+  // In dev mode, route through Vite proxy to avoid CORS — only for Ark URLs
+  if (isDev() && rawUrl.includes('ark.cn-beijing.volces.com')) {
     try {
       return '/api/proxy' + new URL(rawUrl).pathname;
     } catch {
@@ -90,7 +89,8 @@ async function fetchOpenAICompat(
   const body: any = { max_tokens: maxTokens, messages };
   if (model) body.model = model;
 
-  const res = await fetch(url, {
+  const finalUrl = resolveUrl(url) || url;
+  const res = await fetch(finalUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
@@ -168,13 +168,11 @@ function getConfig(settings: AppSettings): { type: 'openai' | 'anthropic'; url: 
     case 'deepseek':
       return { type: 'openai', url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' };
     case 'doubao':
-      // Doubao Ark v3 uses Anthropic Messages API format.
-      // Base URL: user-provided custom URL, or default Ark v3 endpoint.
-      return {
-        type: 'anthropic',
-        url: settings.model || 'https://ark.cn-beijing.volces.com/api/v3',
-        model: 'ark-code-latest',
-      };
+      // Custom Plan URL → Anthropic format; default → OpenAI-compatible Chat API
+      if (settings.model) {
+        return { type: 'anthropic', url: settings.model, model: 'ark-code-latest' };
+      }
+      return { type: 'openai', url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: 'doubao-seed-2-0-mini' };
     case 'claude':
     default:
       return { type: 'anthropic', url: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-6' };
