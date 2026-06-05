@@ -9,6 +9,7 @@ const AI_SERVICES = [
   { value: 'claude', label: 'Claude', desc: 'Anthropic' },
   { value: 'openai', label: 'OpenAI', desc: 'GPT-4o' },
   { value: 'qwen', label: 'Qwen', desc: '通义千问' },
+  { value: 'doubao', label: '豆包', desc: '火山引擎' },
   { value: 'deepseek', label: 'DeepSeek', desc: '仅文字' },
 ] as const;
 
@@ -143,6 +144,16 @@ export default function ProfileForm() {
             onChange={e => setSettings({ ...settings, apiKey: e.target.value })}
             placeholder="输入 API Key..." className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-[14px] mt-1 outline-none" />
         </div>
+        {settings.aiService === 'doubao' && (
+          <div className="mt-3">
+            <label className="text-[11px] text-text-muted font-medium uppercase">模型 / Endpoint ID</label>
+            <input type="text" value={settings.model || ''}
+              onChange={e => setSettings({ ...settings, model: e.target.value })}
+              placeholder="例如：doubao-seed-2-0-mini-260428"
+              className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-[14px] mt-1 outline-none" />
+            <p className="text-[11px] text-text-muted mt-1">火山引擎 Ark 控制台的 Endpoint ID 或模型名</p>
+          </div>
+        )}
         <motion.button onClick={handleSaveSettings} whileTap={{ scale: 0.98 }}
           className="mt-4 w-full py-2.5 rounded-2xl bg-primary/10 text-primary text-[14px] font-semibold flex items-center justify-center gap-2 active:bg-primary/20">
           <Save size={16} /> 保存设置

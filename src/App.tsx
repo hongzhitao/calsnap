@@ -322,7 +322,7 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         </div>
       </div>
 
-      <div className="relative -mt-8 rounded-t-[34px] bg-white px-5 pb-8 pt-7 shadow-[0_-12px_34px_rgba(15,23,42,0.08)]">
+      <div className="relative -mt-8 rounded-t-[34px] bg-white px-5 pb-[calc(2rem+env(safe-area-inset-bottom)+80px)] pt-7 shadow-[0_-12px_34px_rgba(15,23,42,0.08)]">
         {step === 'camera' && (
           <div className="flex flex-col items-center gap-4">
             <input id="food-camera-input" type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
@@ -492,7 +492,7 @@ export default function App() {
       {tab === 'history' && <HistoryList />}
       {tab === 'profile' && <ProfileForm />}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed inset-x-0 bottom-0 z-[60] mx-auto max-w-[430px] pb-[env(safe-area-inset-bottom)]">
         <div className="relative border-t border-white/60 bg-white/82 px-3 pb-2 pt-3 shadow-[0_-8px_28px_rgba(15,23,42,0.045)] backdrop-blur-2xl">
           <button
             onClick={() => setShowCamera(true)}

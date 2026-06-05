@@ -31,8 +31,9 @@ export interface MealRecord {
 }
 
 export interface AppSettings {
-  aiService: 'claude' | 'openai' | 'qwen' | 'deepseek';
+  aiService: 'claude' | 'openai' | 'qwen' | 'deepseek' | 'doubao';
   apiKey: string;
+  model?: string;
   theme: 'light' | 'dark';
 }
 
