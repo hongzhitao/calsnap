@@ -108,8 +108,15 @@ async function fetchAnthropicCompat(
   imageBase64?: string,
   maxTokens = 1024,
 ): Promise<string> {
-  // Anthropic Messages API: endpoint is always {base}/messages
-  const url = resolveUrl(baseUrl) + '/messages';
+  // Anthropic Messages API: append /messages unless URL already contains it
+  let url = resolveUrl(baseUrl);
+  if (!url.endsWith('/messages')) {
+    url += '/messages';
+  }
+
+  if (isDev()) {
+    console.log('[AI] Calling:', url, 'model:', model);
+  }
 
   const content: any[] = [{ type: 'text', text: userText }];
   if (imageBase64) {
