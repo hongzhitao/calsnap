@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: { DEFAULT: '#FAFBF7', light: '#FAFBF7' },
-        surface: { DEFAULT: '#ffffff', light: '#ffffff' },
+        bg: { DEFAULT: '#ffffff', light: '#ffffff' },
+        surface: { DEFAULT: '#f8fafc', light: '#f8fafc' },
         primary: {
           DEFAULT: '#22c55e',
           light: '#86efac',
@@ -28,8 +28,8 @@ export default {
         '4xl': '32px',
       },
       boxShadow: {
-        'soft': '0 4px 32px rgba(0,0,0,0.04)',
-        'soft-up': '0 -4px 32px rgba(0,0,0,0.04)',
+        'soft': '0 2px 12px rgba(0,0,0,0.03)',
+        'soft-up': '0 -2px 12px rgba(0,0,0,0.03)',
         'glow': '0 0 20px rgba(34,197,94,0.15)',
       },
       animation: {
@@ -50,7 +50,7 @@ export default {
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         drawArc: {
-          from: { strokeDashoffset: '330' },
+          from: { strokeDashoffset: '660' },
           to: { strokeDashoffset: '0' },
         },
         slideIn: {
