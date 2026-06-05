@@ -48,7 +48,25 @@ Format:
 
 Identify the equipment precisely. For exercises, list 3-4 common movements people do on this equipment. Keep descriptions concise.`;
 
-// ─── Low-level fetch helpers ───
+// ─── Helpers ───
+
+function isDev(): boolean {
+  try { return import.meta.env.DEV; } catch { return false; }
+}
+
+function resolveUrl(rawUrl: string): string {
+  if (!rawUrl) return rawUrl;
+  // In dev mode, route through Vite proxy to avoid CORS.
+  // Proxy target = https://ark.cn-beijing.volces.com, rewrite strips /api/proxy
+  if (isDev()) {
+    try {
+      return '/api/proxy' + new URL(rawUrl).pathname;
+    } catch {
+      return rawUrl;
+    }
+  }
+  return rawUrl;
+}
 
 async function fetchOpenAICompat(
   url: string,
@@ -61,13 +79,10 @@ async function fetchOpenAICompat(
 ): Promise<string> {
   const messages: any[] = [{ role: 'system', content: system }];
   if (imageBase64) {
-    messages.push({
-      role: 'user',
-      content: [
-        { type: 'image_url', image_url: { url: imageBase64, detail: 'low' } },
-        { type: 'text', text: userText },
-      ],
-    });
+    messages.push({ role: 'user', content: [
+      { type: 'image_url', image_url: { url: imageBase64, detail: 'low' } },
+      { type: 'text', text: userText },
+    ]});
   } else {
     messages.push({ role: 'user', content: userText });
   }
@@ -77,13 +92,9 @@ async function fetchOpenAICompat(
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
   });
-
   if (!res.ok) throw new Error(`${model || 'API'} error ${res.status}: ${await res.text()}`);
   return (await res.json()).choices[0].message.content;
 }
@@ -96,11 +107,9 @@ async function fetchAnthropicCompat(
   userText: string,
   imageBase64?: string,
   maxTokens = 1024,
-  isCustomEndpoint = false,
 ): Promise<string> {
-  // If it's a custom endpoint (like Ark Plan), use it as-is.
-  // Otherwise append /messages for standard Anthropic URL.
-  const url = isCustomEndpoint ? baseUrl : (baseUrl || 'https://api.anthropic.com/v1') + '/messages';
+  // Anthropic Messages API: endpoint is always {base}/messages
+  const url = resolveUrl(baseUrl) + '/messages';
 
   const content: any[] = [{ type: 'text', text: userText }];
   if (imageBase64) {
@@ -111,127 +120,92 @@ async function fetchAnthropicCompat(
     });
   }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'anthropic-version': '2023-06-01',
-  };
-  // Custom endpoints (Ark) may need Bearer, standard Anthropic uses x-api-key
-  if (isCustomEndpoint) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
-    // Also send x-api-key as fallback
-    headers['x-api-key'] = apiKey;
-  } else {
-    headers['x-api-key'] = apiKey;
-  }
-
   const res = await fetch(url, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: model || 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content }],
-    }),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }] }),
   });
-
-  if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${await res.text()}`);
-  }
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
   return (await res.json()).content[0].text;
 }
 
-// ─── Parse AI JSON response ───
+// ─── Parse ───
 
 function parseAIResponse(text: string): AIResult {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
-  const parsed = JSON.parse(jsonMatch[0]);
-  return { foods: parsed.foods || [], totalCalories: parsed.totalCalories || 0 };
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('Failed to parse AI response as JSON');
+  const p = JSON.parse(m[0]);
+  return { foods: p.foods || [], totalCalories: p.totalCalories || 0 };
 }
 
-function parseGymResponse(text: string): { name: string; description: string; exercises: string[] } {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Failed to parse equipment result');
-  const parsed = JSON.parse(jsonMatch[0]);
-  return { name: parsed.name || '未知器械', description: parsed.description || '', exercises: parsed.exercises || [] };
+function parseGym(text: string) {
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('Failed to parse equipment result');
+  const p = JSON.parse(m[0]);
+  return { name: p.name || '未知器械', description: p.description || '', exercises: p.exercises || [] };
 }
 
-// ─── Provider resolution ───
+// ─── Provider ───
 
-interface Provider {
-  type: 'openai-compat' | 'claude' | 'doubao';
-  url: string;
-  model: string;
-  isCustomEndpoint: boolean;
-}
-
-function getProvider(settings: AppSettings): Provider {
-  if (settings.aiService === 'claude') {
-    return { type: 'claude', url: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-6', isCustomEndpoint: false };
+function getConfig(settings: AppSettings): { type: 'openai' | 'anthropic'; url: string; model: string } {
+  switch (settings.aiService) {
+    case 'openai':
+      return { type: 'openai', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' };
+    case 'qwen':
+      return { type: 'openai', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' };
+    case 'deepseek':
+      return { type: 'openai', url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' };
+    case 'doubao':
+      // Doubao Ark v3 uses Anthropic Messages API format.
+      // Base URL: user-provided custom URL, or default Ark v3 endpoint.
+      return {
+        type: 'anthropic',
+        url: settings.model || 'https://ark.cn-beijing.volces.com/api/v3',
+        model: 'ark-code-latest',
+      };
+    case 'claude':
+    default:
+      return { type: 'anthropic', url: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-6' };
   }
-  if (settings.aiService === 'doubao') {
-    const customUrl = settings.model || '';
-    const rawUrl = customUrl || 'https://ark.cn-beijing.volces.com/api/v3';
-    const url = import.meta.env.DEV
-      ? '/api/proxy' + (customUrl ? new URL(rawUrl).pathname : '/api/v3')
-      : rawUrl;
-    return { type: 'doubao', url, model: 'ark-code-latest', isCustomEndpoint: !!customUrl };
-  }
-  const urls: Record<string, string> = {
-    openai: 'https://api.openai.com/v1/chat/completions',
-    qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-    deepseek: 'https://api.deepseek.com/v1/chat/completions',
-  };
-  const models: Record<string, string> = { openai: 'gpt-4o', qwen: 'qwen-plus', deepseek: 'deepseek-chat' };
-  return { type: 'openai-compat', url: urls[settings.aiService], model: models[settings.aiService] || 'gpt-4o', isCustomEndpoint: false };
 }
 
 // ─── Unified call ───
 
 async function call(settings: AppSettings, system: string, userText: string, imageBase64?: string, maxTokens = 1024): Promise<string> {
-  const p = getProvider(settings);
+  const cfg = getConfig(settings);
 
-  if (p.type === 'claude' || p.type === 'doubao') {
-    return fetchAnthropicCompat(p.url, settings.apiKey, p.model, system, userText, imageBase64, maxTokens, p.isCustomEndpoint);
+  if (cfg.type === 'anthropic') {
+    return fetchAnthropicCompat(cfg.url, settings.apiKey, cfg.model, system, userText, imageBase64, maxTokens);
   }
-
-  return fetchOpenAICompat(p.url, settings.apiKey, p.model, system, userText, imageBase64, maxTokens);
+  return fetchOpenAICompat(cfg.url, settings.apiKey, cfg.model, system, userText, imageBase64, maxTokens);
 }
 
-// ─── Public API ───
+// ─── Public ───
 
 export async function recognizeFood(imageBase64: string, settings: AppSettings): Promise<AIResult> {
-  if (settings.aiService === 'deepseek') {
-    throw new Error('DeepSeek 不支持图片识别，请切换其他 AI 服务');
-  }
-  return parseAIResponse(await call(settings, SYS_RECOGNIZE, 'Analyze this meal photo and return the food items with calorie estimates.', imageBase64));
+  if (settings.aiService === 'deepseek') throw new Error('DeepSeek 不支持图片识别');
+  return parseAIResponse(await call(settings, SYS_RECOGNIZE, 'Analyze this meal photo.', imageBase64));
 }
 
-export async function recognizeFoodFromText(description: string, settings: AppSettings): Promise<AIResult> {
-  return parseAIResponse(await call(settings, SYS_TEXT, `Describe what you ate: ${description}`, undefined, 1024));
+export async function recognizeFoodFromText(desc: string, settings: AppSettings): Promise<AIResult> {
+  return parseAIResponse(await call(settings, SYS_TEXT, `What I ate: ${desc}`, undefined, 1024));
 }
 
-export async function getDietaryAdvice(
-  input: {
-    profile: { height: number; weight: number; age: number; gender: string; goal: string; dailyTarget: number };
-    meals: { date: string; mealType: string; foods: { name: string; calories: number }[]; totalCalories: number }[];
-    weightHistory: { date: string; weight: number }[];
-  },
-  settings: AppSettings,
-): Promise<string> {
-  return call(settings, SYS_ADVICE, `Here is my data:\n${JSON.stringify(input, null, 2)}\n\nPlease provide dietary advice based on this.`, undefined, 1500);
+export async function getDietaryAdvice(input: {
+  profile: { height: number; weight: number; age: number; gender: string; goal: string; dailyTarget: number };
+  meals: { date: string; mealType: string; foods: { name: string; calories: number }[]; totalCalories: number }[];
+  weightHistory: { date: string; weight: number }[];
+}, settings: AppSettings): Promise<string> {
+  return call(settings, SYS_ADVICE, `My data:\n${JSON.stringify(input, null, 2)}\n\nGive dietary advice.`, undefined, 1500);
 }
 
-export interface GymResult {
-  name: string;
-  description: string;
-  exercises: string[];
-}
+export interface GymResult { name: string; description: string; exercises: string[]; }
 
 export async function identifyEquipment(imageBase64: string, settings: AppSettings): Promise<GymResult> {
-  if (settings.aiService === 'deepseek') {
-    throw new Error('DeepSeek 不支持图片识别，请切换其他 AI 服务');
-  }
-  return parseGymResponse(await call(settings, SYS_GYM, 'Identify this gym equipment and suggest exercises.', imageBase64, 512));
+  if (settings.aiService === 'deepseek') throw new Error('DeepSeek 不支持图片识别');
+  return parseGym(await call(settings, SYS_GYM, 'Identify gym equipment.', imageBase64, 512));
 }

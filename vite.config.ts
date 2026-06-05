@@ -25,7 +25,7 @@ export default defineConfig({
       '/api/proxy': {
         target: 'https://ark.cn-beijing.volces.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/proxy/, ''),
+        rewrite: (path) => path.replace(/^\/api\/proxy/, '') || '/',
         secure: false,
       },
     },

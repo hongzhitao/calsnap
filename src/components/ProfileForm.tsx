@@ -146,12 +146,12 @@ export default function ProfileForm() {
         </div>
         {settings.aiService === 'doubao' && (
           <div className="mt-3">
-            <label className="text-[11px] text-text-muted font-medium uppercase">API 地址（可选）</label>
+            <label className="text-[11px] text-text-muted font-medium uppercase">Base URL（可选）</label>
             <input type="text" value={settings.model || ''}
               onChange={e => setSettings({ ...settings, model: e.target.value })}
-              placeholder="留空用默认，或填 Agent Plan 地址"
+              placeholder="留空用默认 Ark v3"
               className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-[14px] mt-1 outline-none" />
-            <p className="text-[11px] text-text-muted mt-1">走 Anthropic Messages 格式，填 https://ark.cn-beijing.volces.com/api/plan</p>
+            <p className="text-[11px] text-text-muted mt-1">最终请求地址 = Base URL/messages，填 https://ark.cn-beijing.volces.com/api/plan 则发到 /api/plan/messages</p>
           </div>
         )}
         <motion.button onClick={handleSaveSettings} whileTap={{ scale: 0.98 }}
