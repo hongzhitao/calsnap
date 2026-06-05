@@ -146,12 +146,12 @@ export default function ProfileForm() {
         </div>
         {settings.aiService === 'doubao' && (
           <div className="mt-3">
-            <label className="text-[11px] text-text-muted font-medium uppercase">模型 / Endpoint ID</label>
+            <label className="text-[11px] text-text-muted font-medium uppercase">API 地址 / Endpoint</label>
             <input type="text" value={settings.model || ''}
               onChange={e => setSettings({ ...settings, model: e.target.value })}
-              placeholder="例如：ep-20240605xxxxx-xxxxx"
+              placeholder="https://ark.cn-beijing.volces.com/api/..."
               className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-[14px] mt-1 outline-none" />
-            <p className="text-[11px] text-text-muted mt-1">在火山引擎 Ark 创建推理接入点，复制 Endpoint ID 填入这里</p>
+            <p className="text-[11px] text-text-muted mt-1">豆包 Agent Plan 或其他自定义 API 地址，留空用默认</p>
           </div>
         )}
         <motion.button onClick={handleSaveSettings} whileTap={{ scale: 0.98 }}

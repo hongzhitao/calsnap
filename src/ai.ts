@@ -150,8 +150,8 @@ function getProvider(settings: AppSettings): {
   if (settings.aiService === 'doubao') {
     return {
       type: 'openai-compat',
-      url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-      model: settings.model || 'ep-xxxxxxxxxx',
+      url: settings.model || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+      model: 'doubao-seed-2-0-mini',
     };
   }
   // openai / qwen / deepseek
