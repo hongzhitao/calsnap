@@ -37,21 +37,29 @@ Analyze their eating patterns and provide personalized dietary advice in Chinese
 
 Keep it concise, actionable, and encouraging. Max 400 words.`;
 
-// ─── Unified OpenAI-compatible call (used by OpenAI, Qwen, DeepSeek, Doubao) ───
-async function chatCompat(
-  settings: AppSettings,
-  opts: {
-    url: string;
-    model: string;
-    system: string;
-    userText: string;
-    imageBase64?: string;
-    maxTokens?: number;
-  }
-): Promise<string> {
-  const { url, model, system, userText, imageBase64, maxTokens = 1024 } = opts;
-  const messages: any[] = [{ role: 'system', content: system }];
+const SYS_GYM = `You are a fitness equipment expert. Analyze the photo and identify the gym machine or equipment. Return ONLY valid JSON, no other text.
 
+Format:
+{
+  "name": "equipment name in Chinese",
+  "description": "one-line description in Chinese",
+  "exercises": ["exercise name 1 in Chinese", "exercise name 2", "exercise name 3"]
+}
+
+Identify the equipment precisely. For exercises, list 3-4 common movements people do on this equipment. Keep descriptions concise.`;
+
+// ─── Low-level fetch helpers ───
+
+async function fetchOpenAICompat(
+  url: string,
+  apiKey: string,
+  model: string,
+  system: string,
+  userText: string,
+  imageBase64?: string,
+  maxTokens = 1024,
+): Promise<string> {
+  const messages: any[] = [{ role: 'system', content: system }];
   if (imageBase64) {
     messages.push({
       role: 'user',
@@ -71,36 +79,30 @@ async function chatCompat(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`${model || 'API'} error ${res.status}: ${err}`);
-  }
-
-  const data = await res.json();
-  return data.choices[0].message.content;
+  if (!res.ok) throw new Error(`${model || 'API'} error ${res.status}: ${await res.text()}`);
+  return (await res.json()).choices[0].message.content;
 }
 
-// ─── Claude / Anthropic-compatible call ───
-async function chatClaude(
+async function fetchAnthropicCompat(
+  baseUrl: string,
   apiKey: string,
-  opts: {
-    system: string;
-    userText: string;
-    imageBase64?: string;
-    maxTokens?: number;
-    baseUrl?: string;
-    model?: string;
-  }
+  model: string,
+  system: string,
+  userText: string,
+  imageBase64?: string,
+  maxTokens = 1024,
+  isCustomEndpoint = false,
 ): Promise<string> {
-  const { system, userText, imageBase64, maxTokens = 1024, baseUrl, model } = opts;
-  const url = (baseUrl || 'https://api.anthropic.com/v1') + '/messages';
-  const content: any[] = [{ type: 'text', text: userText }];
+  // If it's a custom endpoint (like Ark Plan), use it as-is.
+  // Otherwise append /messages for standard Anthropic URL.
+  const url = isCustomEndpoint ? baseUrl : (baseUrl || 'https://api.anthropic.com/v1') + '/messages';
 
+  const content: any[] = [{ type: 'text', text: userText }];
   if (imageBase64) {
     const mediaType = imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
     content.unshift({
@@ -109,13 +111,22 @@ async function chatClaude(
     });
   }
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01',
+  };
+  // Custom endpoints (Ark) may need Bearer, standard Anthropic uses x-api-key
+  if (isCustomEndpoint) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+    // Also send x-api-key as fallback
+    headers['x-api-key'] = apiKey;
+  } else {
+    headers['x-api-key'] = apiKey;
+  }
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
+    headers,
     body: JSON.stringify({
       model: model || 'claude-sonnet-4-6',
       max_tokens: maxTokens,
@@ -125,117 +136,80 @@ async function chatClaude(
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Claude API error ${res.status}: ${err}`);
+    throw new Error(`API error ${res.status}: ${await res.text()}`);
   }
-
-  const data = await res.json();
-  return data.content[0].text;
+  return (await res.json()).content[0].text;
 }
 
 // ─── Parse AI JSON response ───
+
 function parseAIResponse(text: string): AIResult {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
   const parsed = JSON.parse(jsonMatch[0]);
-  return {
-    foods: parsed.foods || [],
-    totalCalories: parsed.totalCalories || 0,
-  };
+  return { foods: parsed.foods || [], totalCalories: parsed.totalCalories || 0 };
+}
+
+function parseGymResponse(text: string): { name: string; description: string; exercises: string[] } {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Failed to parse equipment result');
+  const parsed = JSON.parse(jsonMatch[0]);
+  return { name: parsed.name || '未知器械', description: parsed.description || '', exercises: parsed.exercises || [] };
 }
 
 // ─── Provider resolution ───
-function getProvider(settings: AppSettings): {
-  type: 'openai-compat' | 'claude';
-  url?: string;
+
+interface Provider {
+  type: 'openai-compat' | 'claude' | 'doubao';
+  url: string;
   model: string;
-} {
+  isCustomEndpoint: boolean;
+}
+
+function getProvider(settings: AppSettings): Provider {
   if (settings.aiService === 'claude') {
-    return { type: 'claude', model: 'claude-sonnet-4-6' };
+    return { type: 'claude', url: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-6', isCustomEndpoint: false };
   }
   if (settings.aiService === 'doubao') {
-    // Doubao Ark uses Anthropic Messages API format
     const customUrl = settings.model || '';
     const rawUrl = customUrl || 'https://ark.cn-beijing.volces.com/api/v3';
-    // In dev mode, route through Vite proxy to avoid CORS
-    const baseForClaude = import.meta.env.DEV
-      ? '/api/proxy' + new URL(rawUrl).pathname
+    const url = import.meta.env.DEV
+      ? '/api/proxy' + (customUrl ? new URL(rawUrl).pathname : '/api/v3')
       : rawUrl;
-    return {
-      type: 'claude',
-      url: baseForClaude,
-      model: 'ark-code-latest',
-    };
+    return { type: 'doubao', url, model: 'ark-code-latest', isCustomEndpoint: !!customUrl };
   }
-  // openai / qwen / deepseek
   const urls: Record<string, string> = {
     openai: 'https://api.openai.com/v1/chat/completions',
     qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
     deepseek: 'https://api.deepseek.com/v1/chat/completions',
   };
-  const models: Record<string, string> = {
-    openai: 'gpt-4o',
-    qwen: 'qwen-plus',
-    deepseek: 'deepseek-chat',
-  };
-  return {
-    type: 'openai-compat',
-    url: urls[settings.aiService],
-    model: models[settings.aiService] || 'gpt-4o',
-  };
+  const models: Record<string, string> = { openai: 'gpt-4o', qwen: 'qwen-plus', deepseek: 'deepseek-chat' };
+  return { type: 'openai-compat', url: urls[settings.aiService], model: models[settings.aiService] || 'gpt-4o', isCustomEndpoint: false };
+}
+
+// ─── Unified call ───
+
+async function call(settings: AppSettings, system: string, userText: string, imageBase64?: string, maxTokens = 1024): Promise<string> {
+  const p = getProvider(settings);
+
+  if (p.type === 'claude' || p.type === 'doubao') {
+    return fetchAnthropicCompat(p.url, settings.apiKey, p.model, system, userText, imageBase64, maxTokens, p.isCustomEndpoint);
+  }
+
+  return fetchOpenAICompat(p.url, settings.apiKey, p.model, system, userText, imageBase64, maxTokens);
 }
 
 // ─── Public API ───
-export async function recognizeFood(
-  imageBase64: string,
-  settings: AppSettings
-): Promise<AIResult> {
+
+export async function recognizeFood(imageBase64: string, settings: AppSettings): Promise<AIResult> {
   if (settings.aiService === 'deepseek') {
-    throw new Error('DeepSeek 不支持图片识别，请切换为 Claude、OpenAI、Qwen 或 豆包');
+    throw new Error('DeepSeek 不支持图片识别，请切换其他 AI 服务');
   }
-
-  const provider = getProvider(settings);
-  const text = provider.type === 'claude'
-    ? await chatClaude(settings.apiKey, {
-        system: SYS_RECOGNIZE,
-        userText: 'Analyze this meal photo and return the food items with calorie estimates.',
-        imageBase64,
-        baseUrl: provider.url,
-        model: provider.model,
-      })
-    : await chatCompat(settings, {
-        url: provider.url!,
-        model: provider.model,
-        system: SYS_RECOGNIZE,
-        userText: 'Analyze this meal photo and return the food items with calorie estimates.',
-        imageBase64,
-      });
-
-  return parseAIResponse(text);
+  return parseAIResponse(await call(settings, SYS_RECOGNIZE, 'Analyze this meal photo and return the food items with calorie estimates.', imageBase64));
 }
 
-export async function recognizeFoodFromText(
-  description: string,
-  settings: AppSettings
-): Promise<AIResult> {
-  const provider = getProvider(settings);
-  const text = provider.type === 'claude'
-    ? await chatClaude(settings.apiKey, {
-        system: SYS_TEXT,
-        userText: `Describe what you ate: ${description}`,
-        maxTokens: 1024,
-        baseUrl: provider.url,
-        model: provider.model,
-      })
-    : await chatCompat(settings, {
-        url: provider.url!,
-        model: provider.model,
-        system: SYS_TEXT,
-        userText: `Describe what you ate: ${description}`,
-        maxTokens: 1024,
-      });
-
-  return parseAIResponse(text);
+export async function recognizeFoodFromText(description: string, settings: AppSettings): Promise<AIResult> {
+  return parseAIResponse(await call(settings, SYS_TEXT, `Describe what you ate: ${description}`, undefined, 1024));
 }
 
 export async function getDietaryAdvice(
@@ -244,39 +218,10 @@ export async function getDietaryAdvice(
     meals: { date: string; mealType: string; foods: { name: string; calories: number }[]; totalCalories: number }[];
     weightHistory: { date: string; weight: number }[];
   },
-  settings: AppSettings
+  settings: AppSettings,
 ): Promise<string> {
-  const userPrompt = `Here is my data:\n${JSON.stringify(input, null, 2)}\n\nPlease provide dietary advice based on this.`;
-  const provider = getProvider(settings);
-
-  return provider.type === 'claude'
-    ? await chatClaude(settings.apiKey, {
-        system: SYS_ADVICE,
-        userText: userPrompt,
-        maxTokens: 1500,
-        baseUrl: provider.url,
-        model: provider.model,
-      })
-    : await chatCompat(settings, {
-        url: provider.url!,
-        model: provider.model,
-        system: SYS_ADVICE,
-        userText: userPrompt,
-        maxTokens: 1500,
-      });
+  return call(settings, SYS_ADVICE, `Here is my data:\n${JSON.stringify(input, null, 2)}\n\nPlease provide dietary advice based on this.`, undefined, 1500);
 }
-
-// ─── Gym Equipment Recognition ───
-const SYS_GYM = `You are a fitness equipment expert. Analyze the photo and identify the gym machine or equipment. Return ONLY valid JSON, no other text.
-
-Format:
-{
-  "name": "equipment name in Chinese",
-  "description": "one-line description in Chinese",
-  "exercises": ["exercise name 1 in Chinese", "exercise name 2", "exercise name 3"]
-}
-
-Identify the equipment precisely. For exercises, list 3-4 common movements people do on this equipment. Keep descriptions concise.`;
 
 export interface GymResult {
   name: string;
@@ -284,39 +229,9 @@ export interface GymResult {
   exercises: string[];
 }
 
-export async function identifyEquipment(
-  imageBase64: string,
-  settings: AppSettings
-): Promise<GymResult> {
+export async function identifyEquipment(imageBase64: string, settings: AppSettings): Promise<GymResult> {
   if (settings.aiService === 'deepseek') {
     throw new Error('DeepSeek 不支持图片识别，请切换其他 AI 服务');
   }
-
-  const provider = getProvider(settings);
-  const text = provider.type === 'claude'
-    ? await chatClaude(settings.apiKey, {
-        system: SYS_GYM,
-        userText: 'Identify this gym equipment and suggest exercises.',
-        imageBase64,
-        maxTokens: 512,
-        baseUrl: provider.url,
-        model: provider.model,
-      })
-    : await chatCompat(settings, {
-        url: provider.url!,
-        model: provider.model,
-        system: SYS_GYM,
-        userText: 'Identify this gym equipment and suggest exercises.',
-        imageBase64,
-        maxTokens: 512,
-      });
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Failed to parse equipment result');
-  const parsed = JSON.parse(jsonMatch[0]);
-  return {
-    name: parsed.name || '未知器械',
-    description: parsed.description || '',
-    exercises: parsed.exercises || [],
-  };
+  return parseGymResponse(await call(settings, SYS_GYM, 'Identify this gym equipment and suggest exercises.', imageBase64, 512));
 }
