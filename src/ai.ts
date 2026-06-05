@@ -64,18 +64,21 @@ async function chatCompat(
     messages.push({ role: 'user', content: userText });
   }
 
+  const body: any = { max_tokens: maxTokens, messages };
+  if (model) body.model = model;
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${settings.apiKey}`,
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`${model} API error ${res.status}: ${err}`);
+    throw new Error(`${model || 'API'} error ${res.status}: ${err}`);
   }
 
   const data = await res.json();
@@ -153,10 +156,12 @@ function getProvider(settings: AppSettings): {
     const url = import.meta.env.DEV
       ? '/api/proxy' + new URL(baseUrl).pathname
       : baseUrl;
+    // With custom endpoint (Agent Plan), don't send model name — the plan handles it
+    const model = settings.model ? '' : 'doubao-seed-2-0-mini';
     return {
       type: 'openai-compat',
       url,
-      model: 'doubao-seed-2-0-mini',
+      model,
     };
   }
   // openai / qwen / deepseek
