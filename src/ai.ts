@@ -85,7 +85,7 @@ async function chatCompat(
   return data.choices[0].message.content;
 }
 
-// ─── Claude-specific call ───
+// ─── Claude / Anthropic-compatible call ───
 async function chatClaude(
   apiKey: string,
   opts: {
@@ -93,9 +93,12 @@ async function chatClaude(
     userText: string;
     imageBase64?: string;
     maxTokens?: number;
+    baseUrl?: string;
+    model?: string;
   }
 ): Promise<string> {
-  const { system, userText, imageBase64, maxTokens = 1024 } = opts;
+  const { system, userText, imageBase64, maxTokens = 1024, baseUrl, model } = opts;
+  const url = (baseUrl || 'https://api.anthropic.com/v1') + '/messages';
   const content: any[] = [{ type: 'text', text: userText }];
 
   if (imageBase64) {
@@ -106,7 +109,7 @@ async function chatClaude(
     });
   }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -114,7 +117,7 @@ async function chatClaude(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: model || 'claude-sonnet-4-6',
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content }],
@@ -151,17 +154,17 @@ function getProvider(settings: AppSettings): {
     return { type: 'claude', model: 'claude-sonnet-4-6' };
   }
   if (settings.aiService === 'doubao') {
-    const baseUrl = settings.model || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+    // Doubao Ark uses Anthropic Messages API format
+    const customUrl = settings.model || '';
+    const rawUrl = customUrl || 'https://ark.cn-beijing.volces.com/api/v3';
     // In dev mode, route through Vite proxy to avoid CORS
-    const url = import.meta.env.DEV
-      ? '/api/proxy' + new URL(baseUrl).pathname
-      : baseUrl;
-    // With custom endpoint (Agent Plan), don't send model name — the plan handles it
-    const model = settings.model ? '' : 'doubao-seed-2-0-mini';
+    const baseForClaude = import.meta.env.DEV
+      ? '/api/proxy' + new URL(rawUrl).pathname
+      : rawUrl;
     return {
-      type: 'openai-compat',
-      url,
-      model,
+      type: 'claude',
+      url: baseForClaude,
+      model: 'ark-code-latest',
     };
   }
   // openai / qwen / deepseek
@@ -197,6 +200,8 @@ export async function recognizeFood(
         system: SYS_RECOGNIZE,
         userText: 'Analyze this meal photo and return the food items with calorie estimates.',
         imageBase64,
+        baseUrl: provider.url,
+        model: provider.model,
       })
     : await chatCompat(settings, {
         url: provider.url!,
@@ -219,6 +224,8 @@ export async function recognizeFoodFromText(
         system: SYS_TEXT,
         userText: `Describe what you ate: ${description}`,
         maxTokens: 1024,
+        baseUrl: provider.url,
+        model: provider.model,
       })
     : await chatCompat(settings, {
         url: provider.url!,
@@ -243,7 +250,13 @@ export async function getDietaryAdvice(
   const provider = getProvider(settings);
 
   return provider.type === 'claude'
-    ? await chatClaude(settings.apiKey, { system: SYS_ADVICE, userText: userPrompt, maxTokens: 1500 })
+    ? await chatClaude(settings.apiKey, {
+        system: SYS_ADVICE,
+        userText: userPrompt,
+        maxTokens: 1500,
+        baseUrl: provider.url,
+        model: provider.model,
+      })
     : await chatCompat(settings, {
         url: provider.url!,
         model: provider.model,
@@ -286,6 +299,8 @@ export async function identifyEquipment(
         userText: 'Identify this gym equipment and suggest exercises.',
         imageBase64,
         maxTokens: 512,
+        baseUrl: provider.url,
+        model: provider.model,
       })
     : await chatCompat(settings, {
         url: provider.url!,
