@@ -14,6 +14,7 @@ import {
   Battery,
   CheckCircle2,
   Sparkles,
+  Image,
 } from 'lucide-react';
 import type { TabId, MealRecord, UserProfile, FoodItem } from './types';
 import { getMealsByDate, getProfile, getSettings, saveMeal } from './db';
@@ -327,10 +328,20 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         {step === 'camera' && (
           <div className="flex flex-col items-center gap-4">
             <input id="food-camera-input" type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+            <input id="food-gallery-input" type="file" accept="image/*" onChange={handleFile} className="hidden" />
             <label htmlFor="food-camera-input" className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#22c55e] shadow-[0_10px_28px_rgba(34,197,94,0.24)]">
               <Camera size={31} className="text-white" />
             </label>
             <div className="text-[13px] font-medium text-[#6b7280]">拍照识别食物</div>
+            <label htmlFor="food-gallery-input" className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937] active:bg-gray-50">
+              <Image size={18} />
+              从相册选择
+            </label>
+            <div className="flex items-center gap-4 w-full max-w-xs">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-[#6b7280]">或</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
             <button onClick={() => setStep('text')} className="h-12 w-full rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937]">
               ✏️ 文字描述吃了什么
             </button>
