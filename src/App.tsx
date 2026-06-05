@@ -13,6 +13,7 @@ import {
   Wifi,
   Battery,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import type { TabId, MealRecord, UserProfile, FoodItem } from './types';
 import { getMealsByDate, getProfile, getSettings, saveMeal } from './db';
@@ -126,12 +127,12 @@ function FoodRecord({ image, name, time, kcal, delay }: {
 }) {
   return (
     <motion.div
-      className="flex items-center gap-3 rounded-[24px] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.035)]"
+      className="flex items-center gap-3 rounded-[22px] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.035)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.42, ease: 'easeOut' }}
     >
-      <img src={image} alt={name} className="h-[48px] w-[48px] flex-shrink-0 rounded-[18px] object-cover" />
+      <img src={image} alt={name} className="h-[46px] w-[46px] flex-shrink-0 rounded-[17px] object-cover" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[14px] font-bold text-black">{name}</div>
         <div className="mt-0.5 text-[12px] font-medium text-[#6b7280]">{time}</div>
@@ -140,6 +141,44 @@ function FoodRecord({ image, name, time, kcal, delay }: {
         {kcal}<span className="ml-0.5 text-[10px] font-semibold text-[#6b7280]">kcal</span>
       </div>
     </motion.div>
+  );
+}
+
+function MealSection({ title, emoji, meals, emptyText, delay }: {
+  title: string;
+  emoji: string;
+  meals: Array<{ id: string; name: string; time: string; kcal: number; image: string }>;
+  emptyText: string;
+  delay: number;
+}) {
+  const total = meals.reduce((sum, meal) => sum + meal.kcal, 0);
+  return (
+    <motion.section
+      className="rounded-[28px] bg-[#f8faf7] p-3"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.42, ease: 'easeOut' }}
+    >
+      <div className="mb-2 flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[16px] shadow-[0_4px_14px_rgba(15,23,42,0.035)]">{emoji}</span>
+          <div>
+            <div className="text-[14px] font-extrabold text-black">{title}</div>
+            <div className="text-[11px] font-medium text-[#6b7280]">{meals.length ? `${meals.length} 项记录` : emptyText}</div>
+          </div>
+        </div>
+        <div className="text-[13px] font-extrabold text-black">
+          {total}<span className="ml-0.5 text-[10px] font-semibold text-[#6b7280]">kcal</span>
+        </div>
+      </div>
+      {meals.length > 0 && (
+        <div className="space-y-2">
+          {meals.map((meal, index) => (
+            <FoodRecord key={meal.id} {...meal} delay={delay + 0.08 + index * 0.06} />
+          ))}
+        </div>
+      )}
+    </motion.section>
   );
 }
 
@@ -363,17 +402,19 @@ export default function App() {
   const fat = Math.round(totalCalories * 0.25 / 9);
   const carbs = Math.round(totalCalories * 0.45 / 4);
 
-  const demoRecords = meals.length > 0 ? meals.slice(0, 3).map((meal, index) => ({
+  const mealRecords = meals.map((meal, index) => ({
     id: meal.id,
+    mealType: meal.mealType,
     name: meal.foods.map((f) => f.name).join(' · '),
     time: new Date(meal.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     kcal: meal.totalCalories,
-    image: `https://picsum.photos/seed/food-${index + 1}/96/96`,
-  })) : [
-    { id: 'demo-1', name: '三文鱼牛油果沙拉', time: '12:30', kcal: 523, image: 'https://picsum.photos/seed/salmon-avocado/96/96' },
-    { id: 'demo-2', name: '希腊酸奶碗', time: '08:15', kcal: 328, image: 'https://picsum.photos/seed/yogurt-bowl/96/96' },
-    { id: 'demo-3', name: '牛油果奶昔', time: '07:45', kcal: 201, image: 'https://picsum.photos/seed/avocado-smoothie/96/96' },
-  ];
+    image: `https://picsum.photos/seed/food-${meal.id || index}/96/96`,
+  }));
+
+  const breakfastMeals = mealRecords.filter((meal) => meal.mealType === 'breakfast');
+  const lunchMeals = mealRecords.filter((meal) => meal.mealType === 'lunch');
+  const dinnerMeals = mealRecords.filter((meal) => meal.mealType === 'dinner');
+  const snackMeals = mealRecords.filter((meal) => meal.mealType === 'snack');
 
   const navItems: { id: TabId; label: string; icon: any }[] = [
     { id: 'dashboard', label: '首页', icon: Home },
@@ -407,25 +448,43 @@ export default function App() {
           </section>
 
           <section className="relative z-10 grid grid-cols-4 gap-2 px-4">
-            <MacroTile emoji="🔥" title="已摄入" value={totalCalories || 1052} max={dailyTarget} color="#22c55e" unit="kcal" delay={0.35} />
-            <MacroTile emoji="🍗" title="蛋白质" value={protein || 72} max={120} color="#22c55e" unit="g" delay={0.45} />
-            <MacroTile emoji="🥑" title="脂肪" value={fat || 47} max={65} color="#f59e0b" unit="g" delay={0.55} />
-            <MacroTile emoji="🍚" title="碳水" value={carbs || 96} max={170} color="#22c55e" unit="g" delay={0.65} />
+            <MacroTile emoji="🔥" title="已摄入" value={totalCalories} max={dailyTarget} color="#22c55e" unit="kcal" delay={0.35} />
+            <MacroTile emoji="🍗" title="蛋白质" value={protein} max={120} color="#22c55e" unit="g" delay={0.45} />
+            <MacroTile emoji="🥑" title="脂肪" value={fat} max={65} color="#f59e0b" unit="g" delay={0.55} />
+            <MacroTile emoji="🍚" title="碳水" value={carbs} max={170} color="#22c55e" unit="g" delay={0.65} />
           </section>
 
-          <section className="relative z-10 mt-5 px-4">
+          <section className="relative z-10 mt-5 px-4 pb-8">
             <div className="mb-3 flex items-center justify-between px-1">
-              <h2 className="text-[17px] font-extrabold text-black">今日记录</h2>
+              <div>
+                <h2 className="text-[17px] font-extrabold text-black">今日记录</h2>
+                <p className="mt-0.5 text-[11px] font-medium text-[#6b7280]">按早餐、午餐、晚餐整理</p>
+              </div>
               <button onClick={() => setShowCamera(true)} className="flex h-9 items-center gap-1.5 rounded-full bg-[#dcfce7] px-3 text-[13px] font-bold text-[#16a34a]">
                 <Plus size={15} strokeWidth={2.6} />
                 添加食物
               </button>
             </div>
-            <div className="space-y-2.5">
-              {demoRecords.map((record, index) => (
-                <FoodRecord key={record.id} {...record} delay={0.78 + index * 0.12} />
-              ))}
-            </div>
+
+            {meals.length === 0 ? (
+              <motion.div
+                className="rounded-[30px] bg-[#f8faf7] px-6 py-9 text-center"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.78, duration: 0.42, ease: 'easeOut' }}
+              >
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white text-[24px] shadow-[0_8px_24px_rgba(15,23,42,0.035)]">🍽️</div>
+                <div className="text-[15px] font-extrabold text-black">今天还没有饮食记录</div>
+                <div className="mt-1 text-[12px] font-medium text-[#6b7280]">点击“添加食物”或底部相机按钮开始记录</div>
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                <MealSection title="早餐" emoji="🌤️" meals={breakfastMeals} emptyText="还未记录早餐" delay={0.78} />
+                <MealSection title="午餐" emoji="☀️" meals={lunchMeals} emptyText="还未记录午餐" delay={0.9} />
+                <MealSection title="晚餐" emoji="🌙" meals={dinnerMeals} emptyText="还未记录晚餐" delay={1.02} />
+                {snackMeals.length > 0 && <MealSection title="加餐" emoji="🍪" meals={snackMeals} emptyText="" delay={1.14} />}
+              </div>
+            )}
           </section>
         </main>
       )}
@@ -434,23 +493,32 @@ export default function App() {
       {tab === 'profile' && <ProfileForm />}
 
       <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative border-t border-white/60 bg-white/82 px-5 pb-2 pt-3 shadow-[0_-8px_28px_rgba(15,23,42,0.045)] backdrop-blur-2xl">
+        <div className="relative border-t border-white/60 bg-white/82 px-3 pb-2 pt-3 shadow-[0_-8px_28px_rgba(15,23,42,0.045)] backdrop-blur-2xl">
           <button
             onClick={() => setShowCamera(true)}
-            className="absolute left-1/2 top-[-32px] flex h-[68px] w-[68px] -translate-x-1/2 items-center justify-center rounded-full border-[6px] border-white bg-[#22c55e] shadow-[0_12px_32px_rgba(34,197,94,0.28)]"
+            className="absolute left-1/2 top-[-30px] flex h-[64px] w-[64px] -translate-x-1/2 items-center justify-center rounded-full border-[6px] border-white bg-[#22c55e] shadow-[0_12px_32px_rgba(34,197,94,0.28)]"
+            aria-label="添加饮食"
           >
-            <Camera size={26} strokeWidth={2.6} className="text-white" />
+            <Camera size={25} strokeWidth={2.6} className="text-white" />
           </button>
-          <div className="grid grid-cols-3 items-end">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const active = tab === id;
-              return (
-                <button key={id} onClick={() => setTab(id)} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${active ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>
-                  <Icon size={22} strokeWidth={active ? 2.7 : 2.2} />
-                  {label}
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-5 items-end">
+            <button onClick={() => setTab('dashboard')} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${tab === 'dashboard' ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>
+              <Home size={22} strokeWidth={tab === 'dashboard' ? 2.7 : 2.2} />
+              首页
+            </button>
+            <button onClick={() => setTab('history')} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${tab === 'history' ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>
+              <ClipboardList size={22} strokeWidth={tab === 'history' ? 2.7 : 2.2} />
+              记录
+            </button>
+            <div className="min-h-[50px]" aria-hidden="true" />
+            <button onClick={() => setTab('dashboard')} className="flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold text-[#6b7280]">
+              <Sparkles size={22} strokeWidth={2.2} />
+              发现
+            </button>
+            <button onClick={() => setTab('profile')} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${tab === 'profile' ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>
+              <User size={22} strokeWidth={tab === 'profile' ? 2.7 : 2.2} />
+              我的
+            </button>
           </div>
         </div>
       </nav>
