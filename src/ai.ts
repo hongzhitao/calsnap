@@ -131,8 +131,9 @@ async function fetchAnthropicCompat(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
+      'Authorization': `Bearer ${apiKey}`,
+      'x-api-key': apiKey,
     },
     body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }] }),
   });
