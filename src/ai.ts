@@ -148,9 +148,14 @@ function getProvider(settings: AppSettings): {
     return { type: 'claude', model: 'claude-sonnet-4-6' };
   }
   if (settings.aiService === 'doubao') {
+    const baseUrl = settings.model || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+    // In dev mode, route through Vite proxy to avoid CORS
+    const url = import.meta.env.DEV
+      ? '/api/proxy' + new URL(baseUrl).pathname
+      : baseUrl;
     return {
       type: 'openai-compat',
-      url: settings.model || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+      url,
       model: 'doubao-seed-2-0-mini',
     };
   }

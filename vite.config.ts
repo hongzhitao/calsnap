@@ -20,6 +20,16 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      '/api/proxy': {
+        target: 'https://ark.cn-beijing.volces.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/proxy/, ''),
+        secure: false,
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
