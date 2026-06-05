@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Search, ExternalLink, Loader2, Dumbbell, Sparkles } from 'lucide-react';
+import { Camera, X, Search, ExternalLink, Loader2, Dumbbell, Sparkles, Image } from 'lucide-react';
 import type { AppSettings } from '../types';
 import { getSettings } from '../db';
 import { identifyEquipment, type GymResult } from '../ai';
@@ -19,6 +19,7 @@ export default function GymDiscover() {
   const [error, setError] = useState('');
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getSettings().then(setSettings);
@@ -131,14 +132,31 @@ export default function GymDiscover() {
                 onChange={handleFile}
                 className="hidden"
               />
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-14 items-center gap-2 rounded-2xl bg-green-500 px-8 text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(34,197,94,0.28)]"
-              >
-                <Camera size={20} />
-                拍照识别器械
-              </motion.button>
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                className="hidden"
+              />
+              <div className="flex flex-col items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-14 items-center gap-2 rounded-2xl bg-green-500 px-8 text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(34,197,94,0.28)]"
+                >
+                  <Camera size={20} />
+                  拍照识别器械
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex h-12 items-center gap-2 rounded-2xl border border-gray-200 px-6 text-[14px] font-semibold text-[#6b7280] active:bg-gray-50"
+                >
+                  <Image size={18} />
+                  从相册选择
+                </motion.button>
+              </div>
               <p className="text-[11px] text-[#6b7280]">例如：史密斯架、蝴蝶机、哈克深蹲机...</p>
             </motion.div>
           )}
