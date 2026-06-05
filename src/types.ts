@@ -37,7 +37,7 @@ export interface AppSettings {
   theme: 'light' | 'dark';
 }
 
-export type TabId = 'dashboard' | 'history' | 'profile';
+export type TabId = 'dashboard' | 'history' | 'discover' | 'profile';
 
 export interface AIResult {
   foods: FoodItem[];

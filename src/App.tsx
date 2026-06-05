@@ -21,6 +21,7 @@ import { todayStr, uid } from './utils';
 import { recognizeFood, recognizeFoodFromText } from './ai';
 import HistoryList from './components/HistoryList';
 import ProfileForm from './components/ProfileForm';
+import GymDiscover from './components/GymDiscover';
 
 function StatusBar() {
   return (
@@ -490,6 +491,7 @@ export default function App() {
       )}
 
       {tab === 'history' && <HistoryList />}
+      {tab === 'discover' && <GymDiscover />}
       {tab === 'profile' && <ProfileForm />}
 
       <nav className="fixed inset-x-0 bottom-0 z-[60] mx-auto max-w-[430px] pb-[env(safe-area-inset-bottom)]">
@@ -511,8 +513,8 @@ export default function App() {
               记录
             </button>
             <div className="min-h-[50px]" aria-hidden="true" />
-            <button onClick={() => setTab('dashboard')} className="flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold text-[#6b7280]">
-              <Sparkles size={22} strokeWidth={2.2} />
+            <button onClick={() => setTab('discover')} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${tab === 'discover' ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>
+              <Sparkles size={22} strokeWidth={tab === 'discover' ? 2.7 : 2.2} />
               发现
             </button>
             <button onClick={() => setTab('profile')} className={`flex min-h-[50px] flex-col items-center justify-center gap-1 text-[10px] font-bold ${tab === 'profile' ? 'text-[#22c55e]' : 'text-[#6b7280]'}`}>

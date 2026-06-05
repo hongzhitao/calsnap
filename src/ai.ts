@@ -242,3 +242,56 @@ export async function getDietaryAdvice(
         maxTokens: 1500,
       });
 }
+
+// ─── Gym Equipment Recognition ───
+const SYS_GYM = `You are a fitness equipment expert. Analyze the photo and identify the gym machine or equipment. Return ONLY valid JSON, no other text.
+
+Format:
+{
+  "name": "equipment name in Chinese",
+  "description": "one-line description in Chinese",
+  "exercises": ["exercise name 1 in Chinese", "exercise name 2", "exercise name 3"]
+}
+
+Identify the equipment precisely. For exercises, list 3-4 common movements people do on this equipment. Keep descriptions concise.`;
+
+export interface GymResult {
+  name: string;
+  description: string;
+  exercises: string[];
+}
+
+export async function identifyEquipment(
+  imageBase64: string,
+  settings: AppSettings
+): Promise<GymResult> {
+  if (settings.aiService === 'deepseek') {
+    throw new Error('DeepSeek 不支持图片识别，请切换其他 AI 服务');
+  }
+
+  const provider = getProvider(settings);
+  const text = provider.type === 'claude'
+    ? await chatClaude(settings.apiKey, {
+        system: SYS_GYM,
+        userText: 'Identify this gym equipment and suggest exercises.',
+        imageBase64,
+        maxTokens: 512,
+      })
+    : await chatCompat(settings, {
+        url: provider.url!,
+        model: provider.model,
+        system: SYS_GYM,
+        userText: 'Identify this gym equipment and suggest exercises.',
+        imageBase64,
+        maxTokens: 512,
+      });
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Failed to parse equipment result');
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    name: parsed.name || '未知器械',
+    description: parsed.description || '',
+    exercises: parsed.exercises || [],
+  };
+}
