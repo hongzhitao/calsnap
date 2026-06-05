@@ -151,7 +151,7 @@ function getProvider(settings: AppSettings): {
     return {
       type: 'openai-compat',
       url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-      model: settings.model || 'doubao-seed-2-0-mini-260428',
+      model: settings.model || 'ep-xxxxxxxxxx',
     };
   }
   // openai / qwen / deepseek
