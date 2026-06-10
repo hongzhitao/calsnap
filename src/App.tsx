@@ -215,12 +215,11 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [error, setError] = useState('');
   const [settings, setSettings] = useState<any>(null);
   const [flash, setFlash] = useState(false);
+  const viewfinderBg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&h=1200&fit=crop';
 
   useEffect(() => {
     getSettings().then(setSettings);
   }, []);
-
-  const previewUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&h=1200&fit=crop';
 
   async function analyzePhoto(dataUrl: string) {
     if (!settings?.apiKey) {
@@ -281,7 +280,7 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="relative flex-1 overflow-hidden">
-        <img src={previewUrl} alt="camera" className="h-full w-full object-cover" />
+        <img src={photo || viewfinderBg} alt="camera" className="h-full w-full object-cover" />
         {step === 'loading' && (
           <>
             <div
@@ -300,9 +299,9 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
               <div className="flex items-center gap-3">
                 <CheckCircle2 size={25} />
                 <div>
-                  <div className="text-[13px] font-medium opacity-80">识别中...</div>
-                  <div className="text-[17px] font-bold">三文鱼牛油果沙拉</div>
-                  <div className="text-[13px] font-semibold text-[#86efac]">约523 kcal</div>
+                  <div className="text-[13px] font-medium opacity-80">AI 识别中...</div>
+                  <div className="text-[17px] font-bold">正在分析食物营养</div>
+                  <div className="text-[13px] font-semibold text-[#86efac]">请稍候</div>
                 </div>
               </div>
             </motion.div>
@@ -345,7 +344,7 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
             <button onClick={() => setStep('text')} className="h-12 w-full rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937]">
               ✏️ 文字描述吃了什么
             </button>
-            {error && <div className="text-center text-[12px] text-red-500">{error}</div>}
+            {error && <div className="mt-3 w-full max-w-xs text-center text-[11px] text-red-500 break-all leading-relaxed">{error}</div>}
           </div>
         )}
 
@@ -358,7 +357,7 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
               className="h-[120px] w-full resize-none rounded-[22px] bg-gray-50 p-4 text-[16px] outline-none"
               autoFocus
             />
-            {error && <div className="mt-2 text-center text-[12px] text-red-500">{error}</div>}
+            {error && <div className="mt-3 w-full text-center text-[11px] text-red-500 break-all leading-relaxed">{error}</div>}
             <div className="mt-4 flex gap-3">
               <button onClick={() => setStep('camera')} className="h-12 flex-1 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937]">返回</button>
               <button onClick={analyzeText} disabled={!textInput.trim()} className="h-12 flex-1 rounded-[18px] bg-[#22c55e] text-[14px] font-semibold text-white disabled:opacity-40">开始识别</button>

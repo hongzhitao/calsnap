@@ -17,7 +17,12 @@
       "Bash(dir src\\\\*.ts src\\\\*.tsx)",
       "Bash(gh auth *)",
       "Bash(gh repo *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Read(//proc/sys/kernel/**)",
+      "Read(//etc/apt/**)",
+      "Bash(git config *)",
+      "Bash(node *)",
+      "Bash(git remote *)"
     ]
   }
 }

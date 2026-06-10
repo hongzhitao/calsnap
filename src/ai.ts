@@ -1,28 +1,28 @@
 import type { AppSettings, AIResult } from './types';
 
-const SYS_RECOGNIZE = `You are a nutritionist AI. Analyze the food photo and identify all food items. For each item estimate the portion size in grams or common units, and estimate calories. Return ONLY valid JSON, no other text.
+const SYS_RECOGNIZE = `你是营养师 AI。分析食物照片，识别所有食物项。对每项估算份量（克或常用单位）和卡路里。仅返回有效 JSON，不要其他文字。
 
-Format:
+格式：
 {
   "foods": [
-    { "name": "food name", "portion": "estimated amount", "calories": number }
+    { "name": "食物名称（中文）", "portion": "估算份量", "calories": 数值 }
   ],
-  "totalCalories": number
+  "totalCalories": 数值
 }
 
-Be precise but conservative in estimates. If uncertain about a food, note it in the name.`;
+估算要精确但保守。不确定的食物在名称中注明。`;
 
-const SYS_TEXT = `You are a nutritionist AI. The user will describe what they ate in natural language. Identify all food items, estimate portion size, and estimate calories for each. Return ONLY valid JSON, no other text.
+const SYS_TEXT = `你是营养师 AI。用户用自然语言描述了他们吃的食物。识别所有食物项，估算每项的份量和卡路里。仅返回有效 JSON，不要其他文字。
 
-Format:
+格式：
 {
   "foods": [
-    { "name": "food name", "portion": "estimated amount", "calories": number }
+    { "name": "食物名称（中文）", "portion": "估算份量", "calories": 数值 }
   ],
-  "totalCalories": number
+  "totalCalories": 数值
 }
 
-Be precise but conservative in estimates. If the user says "一碗米饭", estimate ~200g and ~230 kcal. If they say "一份番茄炒蛋", estimate ~250g and ~180 kcal.`;
+估算要精确但保守。如果用户说"一碗米饭"，估算约 200g / 230 kcal。如果用户说"一份番茄炒蛋"，估算约 250g / 180 kcal。`;
 
 const SYS_ADVICE = `You are a certified dietitian and nutrition coach. You will receive:
 1. User profile (height, weight, age, gender, goal, daily target)
@@ -56,7 +56,7 @@ function isDev(): boolean {
 
 function resolveUrl(rawUrl: string): string {
   if (!rawUrl) return rawUrl;
-  // In dev mode, route through Vite proxy to avoid CORS — only for Ark URLs
+  // In dev mode, route through Vite proxy to avoid CORS for Ark URLs
   if (isDev() && rawUrl.includes('ark.cn-beijing.volces.com')) {
     try {
       return '/api/proxy' + new URL(rawUrl).pathname;
@@ -95,7 +95,10 @@ async function fetchOpenAICompat(
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`${model || 'API'} error ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(empty)');
+    throw new Error(`${model || 'API'} error ${res.status}: ${body} (url: ${finalUrl})`);
+  }
   return (await res.json()).choices[0].message.content;
 }
 
@@ -108,14 +111,14 @@ async function fetchAnthropicCompat(
   imageBase64?: string,
   maxTokens = 1024,
 ): Promise<string> {
-  // Anthropic Messages API: append /messages unless URL already contains it
-  let url = resolveUrl(baseUrl);
-  if (!url.endsWith('/messages')) {
-    url += '/messages';
-  }
+  // Check if this is an Ark Plan endpoint BEFORE resolveUrl (which mangles it to proxy path)
+  const isArk = baseUrl.includes('ark.cn-beijing.volces.com');
+
+  // Build the real target URL (/messages appended for Anthropic format)
+  const apiUrl = baseUrl + (baseUrl.endsWith('/') ? 'messages' : '/messages');
 
   if (isDev()) {
-    console.log('[AI] Calling:', url, 'model:', model);
+    console.log('[AI] Calling:', apiUrl, 'model:', model);
   }
 
   const content: any[] = [{ type: 'text', text: userText }];
@@ -127,17 +130,42 @@ async function fetchAnthropicCompat(
     });
   }
 
+  // Ark Plan uses x-api-key only (no Bearer); real Anthropic uses both
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (isArk) {
+    headers['x-api-key'] = apiKey;
+  } else {
+    headers['anthropic-version'] = '2023-06-01';
+    headers['Authorization'] = `Bearer ${apiKey}`;
+    headers['x-api-key'] = apiKey;
+  }
+
+  const bodyObj = { model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }] };
+
+  // In dev mode, route Ark calls through server-side relay (pure server-to-server, no CORS, no proxy issues)
+  if (isDev() && isArk) {
+    const relayRes = await fetch('/api/ark-relay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: apiUrl, headers, body: bodyObj }),
+    });
+    const relayData = await relayRes.json();
+    if (relayData.status !== 200) {
+      throw new Error(`API error ${relayData.status}: ${relayData.body} (url: ${apiUrl})`);
+    }
+    return JSON.parse(relayData.body).content[0].text;
+  }
+
+  const url = resolveUrl(baseUrl) + (baseUrl.endsWith('/') ? 'messages' : '/messages');
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'Authorization': `Bearer ${apiKey}`,
-      'x-api-key': apiKey,
-    },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content }] }),
+    headers,
+    body: JSON.stringify(bodyObj),
   });
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(empty)');
+    throw new Error(`API error ${res.status}: ${body} (url: ${url})`);
+  }
   return (await res.json()).content[0].text;
 }
 
@@ -168,11 +196,11 @@ function getConfig(settings: AppSettings): { type: 'openai' | 'anthropic'; url: 
     case 'deepseek':
       return { type: 'openai', url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' };
     case 'doubao':
-      // Custom Plan URL → Anthropic format; default → OpenAI-compatible Chat API
+      // Custom Plan URL → Anthropic format (like CC Switch: /api/plan → /api/plan/messages)
       if (settings.model) {
         return { type: 'anthropic', url: settings.model, model: 'ark-code-latest' };
       }
-      return { type: 'openai', url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: 'doubao-seed-2-0-mini' };
+      return { type: 'openai', url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: 'doubao-seed-2-0-mini-260428' };
     case 'claude':
     default:
       return { type: 'anthropic', url: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-6' };

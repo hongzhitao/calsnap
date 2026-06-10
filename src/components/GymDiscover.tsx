@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Search, ExternalLink, Loader2, Dumbbell, Sparkles, Image } from 'lucide-react';
+import { Camera, Search, Loader2, Dumbbell, Sparkles, Image, Play } from 'lucide-react';
 import type { AppSettings } from '../types';
 import { getSettings } from '../db';
 import { identifyEquipment, type GymResult } from '../ai';
@@ -8,8 +8,67 @@ import { compressImage } from '../utils';
 
 interface VideoCard {
   exercise: string;
-  xhsUrl: string;
+  searchUrl: string;
   coverUrl: string;
+  source: 'bilibili';
+}
+
+// Real fitness exercise photos from Unsplash (free to use)
+const COVER_PHOTOS = [
+  'https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1521805103424-d8f843f627d8?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1544033527-b192daee1f5b?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1637341293982-0796cd44e9a5?w=400&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1580261450046-d0a30080dc9b?w=400&h=600&fit=crop',
+];
+
+const GRADIENT_OVERLAY = 'linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.1) 100%)';
+
+function ExerciseCard({ exercise, searchUrl, coverUrl, index }: VideoCard & { index: number }) {
+  return (
+    <motion.a
+      href={searchUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative block w-full overflow-hidden rounded-2xl shadow-sm text-left active:scale-[0.97] transition-transform no-underline"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 + index * 0.1, duration: 0.35, ease: 'easeOut' }}
+    >
+      <div className="aspect-[3/4] overflow-hidden bg-gray-100">
+        <img
+          src={coverUrl}
+          alt={exercise}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute inset-0" style={{ background: GRADIENT_OVERLAY }} />
+        {/* Platform badge */}
+        <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-[#00a1d6]/85 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+          <Play size={10} />
+          视频
+        </div>
+        {/* Play button */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm">
+            <div className="ml-0.5 h-0 w-0 border-b-[8px] border-l-[14px] border-t-[8px] border-b-transparent border-l-green-500 border-t-transparent" />
+          </div>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <div className="line-clamp-2 text-[13px] font-bold leading-snug text-white drop-shadow-sm">
+          {exercise}
+        </div>
+        <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-white/70">
+          <Search size={10} />
+          B站搜索教程
+        </div>
+      </div>
+    </motion.a>
+  );
 }
 
 export default function GymDiscover() {
@@ -54,27 +113,14 @@ export default function GymDiscover() {
   function buildVideoCards(result: GymResult): VideoCard[] {
     const baseName = result.name;
     return result.exercises.map((exercise, i) => {
-      const query = encodeURIComponent(`${baseName} ${exercise}`);
+      const query = `${baseName} ${exercise} 教程`;
       return {
         exercise,
-        xhsUrl: `https://www.xiaohongshu.com/search_result?keyword=${query}&type=51`,
-        coverUrl: `https://picsum.photos/seed/gym-${i}-${Date.now()}/360/480`,
+        searchUrl: `https://search.bilibili.com/all?keyword=${encodeURIComponent(query)}`,
+        coverUrl: COVER_PHOTOS[i % COVER_PHOTOS.length],
+        source: 'bilibili',
       };
     });
-  }
-
-  function handleOpenXHS(url: string) {
-    // Try deep link first, fallback to web URL
-    const keyword = new URL(url).searchParams.get('keyword') || '';
-    const deepLink = `xhsdiscover://search?keyword=${encodeURIComponent(keyword)}&type=51`;
-    const start = Date.now();
-    window.location.href = deepLink;
-    // If deep link doesn't fire within 1s, open web fallback
-    setTimeout(() => {
-      if (Date.now() - start < 1500) {
-        window.open(url, '_blank');
-      }
-    }, 800);
   }
 
   function reset() {
@@ -94,7 +140,7 @@ export default function GymDiscover() {
           </div>
           <div>
             <h2 className="text-[20px] font-extrabold tracking-[-0.5px] text-black">器械识别</h2>
-            <p className="text-[12px] font-medium text-[#6b7280]">拍照识别健身器械，查看小红书教学视频</p>
+            <p className="text-[12px] font-medium text-[#6b7280]">拍照识别健身器械，查看教学视频</p>
           </div>
         </div>
       </div>
@@ -223,54 +269,17 @@ export default function GymDiscover() {
                 </div>
               </div>
 
-              {/* Video cards */}
+              {/* Video cards grid */}
               <div className="flex-1">
                 <div className="mb-3 flex items-center gap-2">
-                  <Search size={16} className="text-[#ff2442]" />
-                  <h4 className="text-[15px] font-bold text-black">小红书教学视频</h4>
-                  <span className="text-[12px] text-[#6b7280]">· 点击跳转观看</span>
+                  <Play size={16} className="text-[#00a1d6]" />
+                  <h4 className="text-[15px] font-bold text-black">教学视频</h4>
+                  <span className="text-[12px] text-[#6b7280]">· 点击在浏览器中播放</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   {buildVideoCards(result).map((card, i) => (
-                    <motion.button
-                      key={card.exercise}
-                      onClick={() => handleOpenXHS(card.xhsUrl)}
-                      className="group relative overflow-hidden rounded-2xl bg-gray-100 text-left shadow-sm active:scale-[0.97] transition-transform"
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + i * 0.1, duration: 0.35, ease: 'easeOut' }}
-                    >
-                      {/* Cover image */}
-                      <div className="relative aspect-[3/4] overflow-hidden">
-                        <img
-                          src={card.coverUrl}
-                          alt={card.exercise}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                        {/* Play button overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-active:bg-black/20">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur">
-                            <div className="ml-0.5 h-0 w-0 border-b-[8px] border-l-[14px] border-t-[8px] border-b-transparent border-l-green-500 border-t-transparent" />
-                          </div>
-                        </div>
-                        {/* XHS badge */}
-                        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-[#ff2442]/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
-                          <ExternalLink size={10} />
-                          小红书
-                        </div>
-                      </div>
-                      {/* Title */}
-                      <div className="p-3">
-                        <div className="line-clamp-2 text-[13px] font-bold leading-snug text-black">
-                          {card.exercise}
-                        </div>
-                        <div className="mt-1 text-[11px] font-medium text-[#6b7280]">
-                          点击跳转观看 →
-                        </div>
-                      </div>
-                    </motion.button>
+                    <ExerciseCard key={card.exercise} {...card} index={i} />
                   ))}
                 </div>
               </div>
