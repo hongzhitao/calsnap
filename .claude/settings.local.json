@@ -22,7 +22,10 @@
       "Read(//etc/apt/**)",
       "Bash(git config *)",
       "Bash(node *)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(curl *)",
+      "Bash(python -c ' *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { TabId, MealRecord, UserProfile, FoodItem } from './types';
 import { getMealsByDate, getProfile, getSettings, saveMeal } from './db';
-import { todayStr, uid } from './utils';
+import { todayStr, uid, compressImage } from './utils';
 import { recognizeFood, recognizeFoodFromText } from './ai';
 import HistoryList from './components/HistoryList';
 import ProfileForm from './components/ProfileForm';
@@ -215,7 +215,10 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [error, setError] = useState('');
   const [settings, setSettings] = useState<any>(null);
   const [flash, setFlash] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const viewfinderBg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&h=1200&fit=crop';
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getSettings().then(setSettings);
@@ -253,13 +256,19 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    compressImage(file, 800, 0.6).then((dataUrl) => {
       setPhoto(dataUrl);
       analyzePhoto(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    }).catch(() => {
+      // Fallback: read directly if compression fails
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setPhoto(dataUrl);
+        analyzePhoto(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   async function saveResult() {
@@ -326,16 +335,16 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
       <div className="relative -mt-8 rounded-t-[34px] bg-white px-5 pb-[calc(2rem+env(safe-area-inset-bottom)+80px)] pt-7 shadow-[0_-12px_34px_rgba(15,23,42,0.08)]">
         {step === 'camera' && (
           <div className="flex flex-col items-center gap-4">
-            <input id="food-camera-input" type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
-            <input id="food-gallery-input" type="file" accept="image/*" onChange={handleFile} className="hidden" />
-            <label htmlFor="food-camera-input" className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#22c55e] shadow-[0_10px_28px_rgba(34,197,94,0.24)]">
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+            <input ref={galleryInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            <button onClick={() => cameraInputRef.current?.click()} className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#22c55e] shadow-[0_10px_28px_rgba(34,197,94,0.24)]">
               <Camera size={31} className="text-white" />
-            </label>
+            </button>
             <div className="text-[13px] font-medium text-[#6b7280]">拍照识别食物</div>
-            <label htmlFor="food-gallery-input" className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937] active:bg-gray-50">
+            <button onClick={() => galleryInputRef.current?.click()} className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937] active:bg-gray-50">
               <Image size={18} />
               从相册选择
-            </label>
+            </button>
             <div className="flex items-center gap-4 w-full max-w-xs">
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-[#6b7280]">或</span>
