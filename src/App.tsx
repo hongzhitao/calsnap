@@ -338,22 +338,22 @@ function CameraModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
       <div className="relative -mt-8 rounded-t-[34px] bg-white px-5 pb-[calc(2rem+env(safe-area-inset-bottom)+80px)] pt-7 shadow-[0_-12px_34px_rgba(15,23,42,0.08)]">
         {step === 'camera' && (
           <div className="flex flex-col items-center gap-4">
-            <div className="relative">
+            <label className="relative cursor-pointer">
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile}
-                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
-              <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#22c55e] shadow-[0_10px_28px_rgba(34,197,94,0.24)] pointer-events-none">
+                className="absolute inset-0 w-full h-full opacity-0 z-10 pointer-events-none" />
+              <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[#22c55e] shadow-[0_10px_28px_rgba(34,197,94,0.24)]">
                 <Camera size={31} className="text-white" />
               </div>
-            </div>
+            </label>
             <div className="text-[13px] font-medium text-[#6b7280]">拍照识别食物</div>
-            <div className="relative w-full">
+            <label className="relative w-full cursor-pointer">
               <input ref={galleryInputRef} type="file" accept="image/*" onChange={handleFile}
-                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
-              <div className="flex h-12 w-full items-center justify-center gap-2 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937] pointer-events-none">
+                className="absolute inset-0 w-full h-full opacity-0 z-10 pointer-events-none" />
+              <div className="flex h-12 w-full items-center justify-center gap-2 rounded-[18px] border border-gray-200 text-[14px] font-semibold text-[#1f2937]">
                 <Image size={18} />
                 从相册选择
               </div>
-            </div>
+            </label>
             <div className="flex items-center gap-4 w-full max-w-xs">
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-[#6b7280]">或</span>
