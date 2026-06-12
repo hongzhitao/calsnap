@@ -2,104 +2,93 @@
  * PWA-compatible file capture utilities.
  *
  * In Android Chrome PWA standalone mode, <input type="file"> is broken
- * (crbug.com/974971, crbug.com/1202062).  These functions use modern
- * browser APIs (getUserMedia, showOpenFilePicker) that work correctly
- * in standalone mode.
+ * (crbug.com/974971, crbug.com/1202062).
+ *
+ * Workaround: open a picker page in a regular browser tab via window.open,
+ * where file input works normally.  The picker page sends the photo back
+ * via postMessage or localStorage.
  */
 
-/** Capture a photo from the rear camera using getUserMedia. */
-export async function capturePhoto(): Promise<File | null> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    console.warn('[PWA] getUserMedia not available');
-    return null;
-  }
+const PICKER_URL = '/calsnap/picker.html';
+const LS_KEY = 'calsnap_pending_photo';
+const LS_TIME_KEY = 'calsnap_pending_photo_time';
 
-  let stream: MediaStream | null = null;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } },
-      audio: false,
-    });
+let pendingResolve: ((dataUrl: string | null) => void) | null = null;
 
-    // Play video briefly so the sensor warms up and focus locks
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.playsInline = true;
-    video.muted = true;
-    await video.play();
-
-    // Wait for the camera to stabilise
-    await new Promise((r) => setTimeout(r, 400));
-
-    const w = video.videoWidth || 1280;
-    const h = video.videoHeight || 720;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-    // Flip horizontally so it looks like a mirror (like native camera)
-    ctx.translate(w, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, w, h);
-
-    // Stop all tracks immediately
-    stream.getTracks().forEach((t) => t.stop());
-    stream = null;
-
-    const blob = await new Promise<Blob | null>((res) =>
-      canvas.toBlob((b) => res(b), 'image/jpeg', 0.85),
-    );
-    if (!blob) return null;
-
-    return new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-  } catch (err: any) {
-    if (err?.name === 'NotAllowedError') {
-      console.warn('[PWA] Camera permission denied');
-    } else {
-      console.error('[PWA] getUserMedia error:', err);
+/** Listen for photos coming back from the picker page. */
+function startPickerListener() {
+  // Listen for postMessage from popup window
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'PICKER_PHOTO' && e.data?.dataUrl) {
+      if (pendingResolve) {
+        pendingResolve(e.data.dataUrl);
+        pendingResolve = null;
+      }
     }
-    return null;
-  } finally {
-    stream?.getTracks().forEach((t) => t.stop());
+  });
+
+  // Also check localStorage (fallback if postMessage fails)
+  window.addEventListener('storage', (e) => {
+    if (e.key === LS_KEY && e.newValue) {
+      if (pendingResolve) {
+        pendingResolve(e.newValue);
+        pendingResolve = null;
+      }
+      localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_TIME_KEY);
+    }
+  });
+
+  // Check if there's already a pending photo (e.g. page just loaded)
+  const existing = localStorage.getItem(LS_KEY);
+  if (existing) {
+    const time = parseInt(localStorage.getItem(LS_TIME_KEY) || '0', 10);
+    // Only use if less than 60 seconds old
+    if (Date.now() - time < 60000) {
+      setTimeout(() => {
+        if (pendingResolve) {
+          pendingResolve(existing);
+          pendingResolve = null;
+        }
+      }, 100);
+    }
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_TIME_KEY);
   }
 }
 
-/** Pick an image from the gallery using the File System Access API. */
-export async function pickImage(): Promise<File | null> {
-  if (!('showOpenFilePicker' in window)) {
-    console.warn('[PWA] showOpenFilePicker not available');
-    return null;
-  }
+// Start listener immediately on module load
+startPickerListener();
 
-  try {
-    const [handle] = await (window as any).showOpenFilePicker({
-      types: [
-        {
-          description: 'Images',
-          accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'] },
-        },
-      ],
-      multiple: false,
-    });
-    const file = await handle.getFile();
-    return file;
-  } catch (err: any) {
-    // User cancelled – not an error
-    if (err?.name === 'AbortError' || err?.message?.includes('abort')) {
-      return null;
+/**
+ * Open the picker page in a new browser tab and wait for the user to select
+ * a photo.  Returns a dataUrl string, or null if cancelled.
+ */
+export function pickPhotoInBrowserTab(): Promise<string | null> {
+  return new Promise((resolve) => {
+    pendingResolve = resolve;
+
+    // Open picker page in a new window/tab
+    const win = window.open(PICKER_URL, '_blank', 'width=400,height=650');
+
+    if (!win) {
+      // Popup blocked – show a message to the user
+      resolve(null);
+      return;
     }
-    console.error('[PWA] showOpenFilePicker error:', err);
-    return null;
-  }
+
+    // Timeout after 5 minutes
+    setTimeout(() => {
+      if (pendingResolve) {
+        pendingResolve(null);
+        pendingResolve = null;
+      }
+    }, 300000);
+  });
 }
 
 /** Check whether the app is running in a PWA standalone context. */
 export function isStandalone(): boolean {
-  return window.matchMedia('(display-mode: standalone)').matches;
-}
-
-/** Detect if we are on an Android device (user-agent sniff). */
-export function isAndroid(): boolean {
-  return /android/i.test(navigator.userAgent);
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.matchMedia('(display-mode: minimal-ui)').matches;
 }

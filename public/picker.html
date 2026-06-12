@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>选择照片</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#000;display:flex;align-items:center;justify-content:center;min-height:100dvh}
+#app{text-align:center;padding:24px;width:100%;max-width:400px}
+h1{color:#fff;font-size:20px;margin-bottom:24px;font-weight:700}
+label{display:block;padding:16px 32px;background:#22c55e;color:#fff;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:16px}
+label:active{transform:scale(0.97)}
+.hint{color:rgba(255,255,255,0.5);font-size:13px}
+.loading{color:rgba(255,255,255,0.7);font-size:14px;margin-top:24px}
+#fileInput{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>📸 选择照片</h1>
+  <label for="fileInput">从相册选择</label>
+  <input id="fileInput" type="file" accept="image/*" />
+  <div class="hint">选完照片后自动返回</div>
+  <div class="loading" id="status"></div>
+</div>
+<script>
+const input = document.getElementById('fileInput');
+const status = document.getElementById('status');
+
+input.addEventListener('change', async function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  status.textContent = '正在处理...';
+
+  // Read as data URL
+  const reader = new FileReader();
+  reader.onload = function() {
+    const dataUrl = reader.result;
+
+    // Try postMessage back to opener
+    if (window.opener && !window.opener.closed) {
+      try {
+        window.opener.postMessage({ type: 'PICKER_PHOTO', dataUrl: dataUrl }, '*');
+        status.textContent = '发送成功，即将关闭';
+        setTimeout(() => window.close(), 500);
+        return;
+      } catch(e) {}
+    }
+
+    // Fallback: store in localStorage
+    localStorage.setItem('calsnap_pending_photo', dataUrl);
+    localStorage.setItem('calsnap_pending_photo_time', Date.now().toString());
+    status.textContent = '已保存，请返回原页面';
+    document.querySelector('h1')!.textContent = '✅ 照片已选择';
+    document.querySelector('.hint')!.textContent = '请关闭此页面，回到原应用';
+  };
+  reader.readAsDataURL(file);
+});
+
+// If opener is already closed, show message
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    // Page is being hidden - user might be going back to PWA
+  }
+});
+</script>
+</body>
+</html>
