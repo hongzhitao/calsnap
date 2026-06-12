@@ -170,38 +170,36 @@ export default function GymDiscover() {
                 <div className="mt-1 text-[13px] font-medium text-[#6b7280]">AI 自动识别器械类型</div>
               </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFile}
-                className="hidden"
-              />
-              <input
-                ref={galleryInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFile}
-                className="hidden"
-              />
               <div className="flex flex-col items-center gap-3">
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex h-14 items-center gap-2 rounded-2xl bg-green-500 px-8 text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(34,197,94,0.28)]"
-                >
-                  <Camera size={20} />
-                  拍照识别器械
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => galleryInputRef.current?.click()}
-                  className="flex h-12 items-center gap-2 rounded-2xl border border-gray-200 px-6 text-[14px] font-semibold text-[#6b7280] active:bg-gray-50"
-                >
-                  <Image size={18} />
-                  从相册选择
-                </motion.button>
+                {/* Camera button with overlay input */}
+                <div className="relative">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFile}
+                    className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                  />
+                  <div className="flex h-14 items-center gap-2 rounded-2xl bg-green-500 px-8 text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(34,197,94,0.28)] pointer-events-none">
+                    <Camera size={20} />
+                    拍照识别器械
+                  </div>
+                </div>
+                {/* Gallery button with overlay input */}
+                <div className="relative w-full max-w-[260px]">
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFile}
+                    className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                  />
+                  <div className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-gray-200 px-6 text-[14px] font-semibold text-[#6b7280] pointer-events-none">
+                    <Image size={18} />
+                    从相册选择
+                  </div>
+                </div>
               </div>
               <p className="text-[11px] text-[#6b7280]">例如：史密斯架、蝴蝶机、哈克深蹲机...</p>
             </motion.div>
