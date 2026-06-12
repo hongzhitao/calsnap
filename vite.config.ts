@@ -13,7 +13,7 @@ export default defineConfig({
         short_name: 'CalSnap',
         theme_color: '#FAFBF7',
         background_color: '#FAFBF7',
-        display: 'standalone',
+        display: 'minimal-ui',
         icons: [
           { src: '/calsnap/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/calsnap/icon-512.png', sizes: '512x512', type: 'image/png' },
