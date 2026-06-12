@@ -5,6 +5,7 @@ import type { AppSettings } from '../types';
 import { getSettings } from '../db';
 import { identifyEquipment, type GymResult } from '../ai';
 import { compressImage } from '../utils';
+import { capturePhoto, pickImage, isStandalone } from '../pwa';
 
 interface VideoCard {
   exercise: string;
@@ -84,13 +85,37 @@ export default function GymDiscover() {
     getSettings().then(setSettings);
   }, []);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleCameraClick() {
+    const file = await capturePhoto();
+    if (file) {
+      processFile(file);
+    } else if (!isStandalone()) {
+      fileInputRef.current?.click();
+    } else {
+      setError('无法打开相机，请使用「从相册选择」');
+    }
+  }
+
+  async function handleGalleryClick() {
+    const file = await pickImage();
+    if (file) {
+      processFile(file);
+    } else if (!isStandalone()) {
+      galleryInputRef.current?.click();
+    }
+  }
+
+  function processFile(file: File) {
     compressImage(file, 1024, 0.7).then((dataUrl) => {
       setPhoto(dataUrl);
       setStep('preview');
     });
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
   }
 
   async function handleIdentify() {
@@ -171,35 +196,23 @@ export default function GymDiscover() {
               </div>
 
               <div className="flex flex-col items-center gap-3">
-                {/* Camera button with label */}
-                <label className="relative cursor-pointer">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFile}
-                    className="absolute inset-0 w-full h-full opacity-0 z-10 pointer-events-none"
-                  />
+                {/* Camera button */}
+                <button onClick={handleCameraClick} className="cursor-pointer">
                   <div className="flex h-14 items-center gap-2 rounded-2xl bg-green-500 px-8 text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(34,197,94,0.28)]">
                     <Camera size={20} />
                     拍照识别器械
                   </div>
-                </label>
-                {/* Gallery button with label */}
-                <label className="relative w-full max-w-[260px] cursor-pointer">
-                  <input
-                    ref={galleryInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFile}
-                    className="absolute inset-0 w-full h-full opacity-0 z-10 pointer-events-none"
-                  />
+                </button>
+                {/* Gallery button */}
+                <button onClick={handleGalleryClick} className="w-full max-w-[260px] cursor-pointer">
                   <div className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-gray-200 px-6 text-[14px] font-semibold text-[#6b7280]">
                     <Image size={18} />
                     从相册选择
                   </div>
-                </label>
+                </button>
+                {/* Hidden fallback inputs */}
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+                <input ref={galleryInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
               </div>
               <p className="text-[11px] text-[#6b7280]">例如：史密斯架、蝴蝶机、哈克深蹲机...</p>
             </motion.div>

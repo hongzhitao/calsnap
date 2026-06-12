@@ -25,7 +25,9 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(curl *)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "WebSearch",
+      "Skill(deep-research)"
     ]
   }
 }
