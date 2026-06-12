@@ -2,68 +2,68 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>选择照片</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>选择照片 - CalSnap</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#000;display:flex;align-items:center;justify-content:center;min-height:100dvh}
-#app{text-align:center;padding:24px;width:100%;max-width:400px}
-h1{color:#fff;font-size:20px;margin-bottom:24px;font-weight:700}
-label{display:block;padding:16px 32px;background:#22c55e;color:#fff;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:16px}
-label:active{transform:scale(0.97)}
-.hint{color:rgba(255,255,255,0.5);font-size:13px}
-.loading{color:rgba(255,255,255,0.7);font-size:14px;margin-top:24px}
-#fileInput{display:none}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#000;display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:24px}
+#app{text-align:center;width:100%;max-width:380px}
+h1{color:#fff;font-size:22px;margin-bottom:8px;font-weight:700}
+.sub{color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:32px}
+.btn{display:block;width:100%;padding:18px;border-radius:18px;font-size:16px;font-weight:600;cursor:pointer;border:none;transition:transform .15s}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:#22c55e;color:#fff}
+.btn-secondary{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);margin-top:12px}
+.btn-secondary:hover{background:rgba(255,255,255,0.15)}
+.status{color:rgba(255,255,255,0.6);font-size:14px;margin-top:24px;min-height:24px}
+.success-icon{font-size:48px;margin-bottom:16px}
+.hidden{display:none}
 </style>
 </head>
 <body>
 <div id="app">
   <h1>📸 选择照片</h1>
-  <label for="fileInput">从相册选择</label>
-  <input id="fileInput" type="file" accept="image/*" />
-  <div class="hint">选完照片后自动返回</div>
-  <div class="loading" id="status"></div>
-</div>
-<script>
-const input = document.getElementById('fileInput');
-const status = document.getElementById('status');
+  <p class="sub">选完照片后自动传回 CalSnap</p>
 
-input.addEventListener('change', async function(e) {
+  <button class="btn btn-primary" id="pickBtn">从相册选择</button>
+  <input id="fileInput" type="file" accept="image/*" class="hidden" />
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const status = document.getElementById('status');
+const pickBtn = document.getElementById('pickBtn');
+
+pickBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', function(e) {
   const file = e.target.files?.[0];
   if (!file) return;
 
   status.textContent = '正在处理...';
 
-  // Read as data URL
   const reader = new FileReader();
   reader.onload = function() {
     const dataUrl = reader.result;
 
-    // Try postMessage back to opener
-    if (window.opener && !window.opener.closed) {
-      try {
-        window.opener.postMessage({ type: 'PICKER_PHOTO', dataUrl: dataUrl }, '*');
-        status.textContent = '发送成功，即将关闭';
-        setTimeout(() => window.close(), 500);
-        return;
-      } catch(e) {}
-    }
-
-    // Fallback: store in localStorage
+    // Save to localStorage – the PWA listens for this via 'storage' event
     localStorage.setItem('calsnap_pending_photo', dataUrl);
     localStorage.setItem('calsnap_pending_photo_time', Date.now().toString());
-    status.textContent = '已保存，请返回原页面';
-    document.querySelector('h1')!.textContent = '✅ 照片已选择';
-    document.querySelector('.hint')!.textContent = '请关闭此页面，回到原应用';
+
+    status.textContent = '✅ 照片已发送！';
+    document.querySelector('h1')!.textContent = '✅ 已完成';
+    document.querySelector('.sub')!.textContent = '请关闭此页面，回到 CalSnap';
+
+    // Try to close this tab automatically
+    setTimeout(() => {
+      try { window.close(); } catch(e) {}
+    }, 1500);
   };
   reader.readAsDataURL(file);
-});
-
-// If opener is already closed, show message
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    // Page is being hidden - user might be going back to PWA
-  }
 });
 </script>
 </body>

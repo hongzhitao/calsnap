@@ -4,84 +4,84 @@
  * In Android Chrome PWA standalone mode, <input type="file"> is broken
  * (crbug.com/974971, crbug.com/1202062).
  *
- * Workaround: open a picker page in a regular browser tab via window.open,
- * where file input works normally.  The picker page sends the photo back
- * via postMessage or localStorage.
+ * Workaround: navigate to picker.html using a target="_blank" anchor
+ * (which opens in the system browser, not the WebAPK), let the user
+ * select a photo there, then receive it back via localStorage.
  */
 
 const PICKER_URL = '/calsnap/picker.html';
 const LS_KEY = 'calsnap_pending_photo';
 const LS_TIME_KEY = 'calsnap_pending_photo_time';
 
-let pendingResolve: ((dataUrl: string | null) => void) | null = null;
+/** Callback that will be invoked when a photo arrives from the picker. */
+let onPhotoReceived: ((dataUrl: string) => void) | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-/** Listen for photos coming back from the picker page. */
-function startPickerListener() {
-  // Listen for postMessage from popup window
-  window.addEventListener('message', (e) => {
-    if (e.data?.type === 'PICKER_PHOTO' && e.data?.dataUrl) {
-      if (pendingResolve) {
-        pendingResolve(e.data.dataUrl);
-        pendingResolve = null;
-      }
-    }
-  });
-
-  // Also check localStorage (fallback if postMessage fails)
-  window.addEventListener('storage', (e) => {
-    if (e.key === LS_KEY && e.newValue) {
-      if (pendingResolve) {
-        pendingResolve(e.newValue);
-        pendingResolve = null;
-      }
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_TIME_KEY);
-    }
-  });
-
-  // Check if there's already a pending photo (e.g. page just loaded)
-  const existing = localStorage.getItem(LS_KEY);
-  if (existing) {
-    const time = parseInt(localStorage.getItem(LS_TIME_KEY) || '0', 10);
-    // Only use if less than 60 seconds old
-    if (Date.now() - time < 60000) {
-      setTimeout(() => {
-        if (pendingResolve) {
-          pendingResolve(existing);
-          pendingResolve = null;
-        }
-      }, 100);
-    }
+/** Listen for photos saved by the picker page via the storage event. */
+window.addEventListener('storage', (e) => {
+  if (e.key === LS_KEY && e.newValue && onPhotoReceived) {
+    const cb = onPhotoReceived;
+    stopPolling();
+    onPhotoReceived = null;
     localStorage.removeItem(LS_KEY);
     localStorage.removeItem(LS_TIME_KEY);
+    cb(e.newValue);
+  }
+});
+
+/** Also poll localStorage periodically as a fallback (storage event may not fire across WebAPK ↔ browser boundary). */
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    const data = localStorage.getItem(LS_KEY);
+    if (data && onPhotoReceived) {
+      const time = parseInt(localStorage.getItem(LS_TIME_KEY) || '0', 10);
+      // Only accept if written within the last 60 seconds
+      if (Date.now() - time < 60000) {
+        const cb = onPhotoReceived;
+        stopPolling();
+        onPhotoReceived = null;
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(LS_TIME_KEY);
+        cb(data);
+      }
+    }
+  }, 500);
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
 }
 
-// Start listener immediately on module load
-startPickerListener();
-
 /**
- * Open the picker page in a new browser tab and wait for the user to select
- * a photo.  Returns a dataUrl string, or null if cancelled.
+ * Open picker.html in the system browser and wait for the user to
+ * select a photo.  Returns a dataUrl string, or null if cancelled.
  */
 export function pickPhotoInBrowserTab(): Promise<string | null> {
   return new Promise((resolve) => {
-    pendingResolve = resolve;
+    onPhotoReceived = resolve;
+    startPolling();
 
-    // Open picker page in a new window/tab
-    const win = window.open(PICKER_URL, '_blank', 'width=400,height=650');
-
-    if (!win) {
-      // Popup blocked – show a message to the user
-      resolve(null);
-      return;
-    }
+    // Create an anchor with target="_blank" – in Android PWA standalone
+    // mode this opens in the system browser, not the WebAPK.
+    const a = document.createElement('a');
+    a.href = PICKER_URL;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
     // Timeout after 5 minutes
     setTimeout(() => {
-      if (pendingResolve) {
-        pendingResolve(null);
-        pendingResolve = null;
+      if (onPhotoReceived) {
+        stopPolling();
+        onPhotoReceived = null;
+        resolve(null);
       }
     }, 300000);
   });
@@ -89,6 +89,5 @@ export function pickPhotoInBrowserTab(): Promise<string | null> {
 
 /** Check whether the app is running in a PWA standalone context. */
 export function isStandalone(): boolean {
-  return window.matchMedia('(display-mode: standalone)').matches ||
-         window.matchMedia('(display-mode: minimal-ui)').matches;
+  return window.matchMedia('(display-mode: standalone)').matches;
 }
